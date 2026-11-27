@@ -98,9 +98,12 @@ void SelfUpdate::check() {
         auto mine = update::parse_version(current_);
         std::optional<update::Version> best;
         std::string best_tag, url, sha;
+        int objects = 0, parsed = 0;
         for (const std::string& obj : top_level_objects(body)) {
+            ++objects;
             auto rel = update::parse_release_json(obj);
             if (!rel || rel->draft) continue;
+            ++parsed;
             const update::Asset* a = rel->find(kAsset);
             auto v = update::parse_version(rel->tag);
             if (!a || !v) continue;
@@ -118,6 +121,9 @@ void SelfUpdate::check() {
             sha256_ = sha;
             state_ = State::Available;
         } else {
+            // Diagnostics for the update test mode.
+            error_ = "releases " + std::to_string(objects) + ", read " + std::to_string(parsed) + ", body " +
+                     std::to_string(body.size()) + " bytes";
             state_ = State::UpToDate;
         }
     });
