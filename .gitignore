@@ -38,3 +38,7 @@ Thumbs.db
 
 # Personal Claude Code notes
 CLAUDE.local.md
+
+# Runtime coverage reports written next to the working directory
+recomp_coverage_*.json
+recomp_master_misses_*.toml.frag
