@@ -13,8 +13,12 @@ gba_bios*
 # Local-only files (ROM path, unlicensed references)
 local/
 
+# Code generated from the ROM (never commit)
+generated/
+
 # Build output
 build/
+build-*/
 out/
 cmake-build-*/
 *.exe
