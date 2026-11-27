@@ -24,10 +24,10 @@ public:
     // Slice length in CPU cycles between switching consoles.
     static constexpr u32 kSliceCycles = 128;
     // CPU speed given to linked consoles (Gba::cpu_speed_pct). At 100 % a child console fell
-    // behind during heavy frames and the game reported "Communication Error!". 125 % passed the
-    // first tests but failed later in an online session; 150 % leaves more margin. Remove once
-    // instruction timing matches real hardware.
-    static constexpr u32 kLinkCpuSpeedPct = 150;
+    // behind during heavy frames and the game reported "Communication Error!". A recorded online
+    // session failed at 125 % and 150 % (player 1 going through a door while player 2 fought) and
+    // passed from 175 %; 200 % leaves margin. Remove once instruction timing matches hardware.
+    static constexpr u32 kLinkCpuSpeedPct = 200;
 
     explicit LinkCable(std::vector<Gba*> units);
     ~LinkCable();

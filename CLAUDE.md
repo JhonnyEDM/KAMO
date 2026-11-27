@@ -27,7 +27,7 @@ C++20, CMake, SDL3, Dear ImGui. Start with `README.md`, `docs/ARCHITECTURE.md`,
 - **Game-specific RAM features** (cheats, rumble events, widescreen, save header check) still use
   addresses from KNID's game and stay off until `game::kRamMapVerified` is true. Don't enable them
   without mapping this game's RAM.
-- Linked consoles run the CPU at 150 % (`LinkCable::kLinkCpuSpeedPct`) to make up for
+- Linked consoles run the CPU at 200 % (`LinkCable::kLinkCpuSpeedPct`) to make up for
   instruction timing that is slower than hardware; see the roadmap.
 
 ## Workflow

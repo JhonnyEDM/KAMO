@@ -5,7 +5,7 @@ if(APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version")
 endif()
 
-project(kamo LANGUAGES C CXX VERSION 0.1.2)
+project(kamo LANGUAGES C CXX VERSION 0.1.3)
 # Version shown to players and used by updates and online play; the suffix marks test builds.
 set(KAMO_VERSION_STRING "${PROJECT_VERSION}-alpha")
 
@@ -387,6 +387,10 @@ if(KAMO_BUILD_TESTS)
         KAMO_TEST_ROM="${PROJECT_SOURCE_DIR}/Kirby - The Amazing Mirror.gba"
         KAMO_TEST_BIOS="${PROJECT_SOURCE_DIR}/gba_bios.bin")
     add_test(NAME save_state_determinism COMMAND kamo_state_test)
+    # Online session recorded when the link failed at 125-150 % CPU (player 1 at a door). Needs KAMO_ROM.
+    add_test(NAME link_replay_door_transition COMMAND kamo_link --replay ${PROJECT_SOURCE_DIR}/tests/data/sessions/door-transition.kinp
+             --out ${CMAKE_CURRENT_BINARY_DIR}/link-replay --quiet --expect-link)
+    set_tests_properties(link_replay_door_transition PROPERTIES SKIP_RETURN_CODE 77)
     set_tests_properties(save_state_determinism PROPERTIES SKIP_RETURN_CODE 77)
     if(TARGET kamo_launcher)
         # RetroAchievements glue against canned server replies (offline).

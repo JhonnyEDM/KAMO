@@ -69,6 +69,7 @@ int main(int argc, char** argv) {
     std::vector<Script> scripts(4);
     std::vector<std::vector<std::uint16_t>> replay;  // per frame, per player (from --replay)
     bool quiet = false;
+    bool expect_link = false;  // exit 1 if the link stops (regression tests)
     for (int i = 1; i < argc; ++i) {
         std::string a = argv[i];
         auto next = [&]() -> std::string { return i + 1 < argc ? argv[++i] : ""; };
@@ -93,6 +94,7 @@ int main(int argc, char** argv) {
         } else if (a == "--trace-from") trace_from = std::strtol(next().c_str(), nullptr, 10);
         else if (a == "--cpu-pct") cpu_pct = std::atoi(next().c_str());
         else if (a == "--quiet") quiet = true;
+        else if (a == "--expect-link") expect_link = true;
         else if (a == "--replay") {
             // A KAMO-Netplay recording: header lines, then "frames", then one line per frame.
             std::ifstream in(next());
@@ -119,6 +121,15 @@ int main(int argc, char** argv) {
         else return usage();
     }
     if (!replay.empty() && frames <= 0) frames = long(replay.size());
+    if (rom_path.empty()) {
+        // Tests: take the ROM from KAMO_ROM, and skip (exit 77) when there is none.
+        const char* env = std::getenv("KAMO_ROM");
+        if (!env || !*env) {
+            std::printf("skipped: ROM not available (set KAMO_ROM)\n");
+            return 77;
+        }
+        rom_path = env;
+    }
     if (rom_path.empty() || out.empty() || frames <= 0 || units < 2 || units > 4) return usage();
 
     auto loaded = kamo::load_rom(rom_path);
@@ -188,5 +199,6 @@ int main(int argc, char** argv) {
     }
     dump(frames, true);
     std::printf("done: %ld frames, %llu transfers\n", frames, (unsigned long long)cable.transfers());
+    if (expect_link && stall_reported >= 0) return 1;
     return 0;
 }
