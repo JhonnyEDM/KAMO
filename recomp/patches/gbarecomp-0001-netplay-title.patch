@@ -1,0 +1,13 @@
+diff --git a/src/runtime/multiplayer_runner.cpp b/src/runtime/multiplayer_runner.cpp
+index 36ecd24..6dd968d 100644
+--- a/src/runtime/multiplayer_runner.cpp
++++ b/src/runtime/multiplayer_runner.cpp
+@@ -186,7 +186,7 @@ int run(const GbaNetplayLaunch& launch,const GbaNetplayBoot& boot) {
+             match.phase()==GbaNetplayMatch::Phase::Starting ? std::string("Connecting") :
+             (closing || (match.checkpoint_pending() && !boot.finish_tick)) ?
+                 std::string("Saving and leaving - close again to discard") :
+-            "Link cable - Player "+std::to_string(launch.seat_machine[launch.local_seat]+1)+" - Shift+F1 save and leave";
++            "Link cable - Player "+std::to_string(launch.seat_machine[launch.local_seat]+1);
+         const auto title=boot.title+" - "+status;
+         if (title!=previous_title) { window.set_title(title.c_str()); previous_title=title; }
+         if (match.take_output(output)) {

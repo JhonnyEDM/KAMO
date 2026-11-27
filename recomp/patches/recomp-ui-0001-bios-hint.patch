@@ -1,0 +1,24 @@
+diff --git a/src/common/backends/imgui/launcher_imgui.cpp b/src/common/backends/imgui/launcher_imgui.cpp
+index 8726f47..001bb9b 100644
+--- a/src/common/backends/imgui/launcher_imgui.cpp
++++ b/src/common/backends/imgui/launcher_imgui.cpp
+@@ -12025,7 +12025,9 @@ static void draw_lobby_footer(LauncherModel* m, const LauncherTheme& th,
+             s.seated_players < 2
+                 ? "Waiting for another player to join"
+             : s.local_rom_missing
+-                ? "Select your copy of the game first"
++                ? (m && m->has_bios && !m->setup_bios_ok && launcher_model_rom_verified(m)
++                       ? "Choose your BIOS in Settings first"
++                       : "Select your copy of the game first")
+             : s.local_missing_files > 0
+                 ? "Select the files this lobby's mods need first"
+             : s.peers_not_ready > 0
+@@ -14688,7 +14690,7 @@ void draw_footer(LauncherModel* m, const LauncherTheme& th, float footer_h) {
+                 "Select a valid BIOS first (or Use OpenBIOS when this build "
+                 "allows it).");
+         } else if (m->has_bios && !m->setup_bios_ok) {
+-            ImGui::SetTooltip("Select a valid BIOS first.");
++            ImGui::SetTooltip("Choose your BIOS in Settings first.");
+         } else if (!m->rom_present || strcmp(m->rom_size, "--") == 0) {
+             ImGui::SetTooltip("Select a valid %s first", noun);
+         } else if (m->profile && m->profile->verify.mode == 1 &&

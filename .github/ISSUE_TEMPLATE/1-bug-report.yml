@@ -6,8 +6,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        **Never attach or link a ROM or BIOS file, or share a RetroAchievements password or token.** Issues that do will be deleted.
-        Can't open the app or your ROM isn't accepted? See [Getting started](https://github.com/JhonnyEDM/KAMO#getting-started) first. Only Kirby & The Amazing Mirror (USA) is supported.
+        **Never attach or link a ROM or BIOS file.** Issues that do will be deleted.
+        Can't open the app or your ROM isn't accepted? See [Playing](https://github.com/JhonnyEDM/KAMO#playing) first. Only Kirby & The Amazing Mirror (USA) is supported.
 
   - type: checkboxes
     id: checks
@@ -49,8 +49,8 @@ body:
     id: version
     attributes:
       label: KAMO version
-      description: Shown in Settings (F1) > About.
-      placeholder: "0.1.0"
+      description: The number in the name of the zip you downloaded.
+      placeholder: "0.2.2-alpha"
     validations:
       required: true
 

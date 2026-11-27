@@ -22,6 +22,29 @@ if(NOT EXISTS "${KAMO_BIOS_DIR}/bios_recompiled.cpp")
     message(FATAL_ERROR "No recompiled BIOS in ${KAMO_BIOS_DIR}. See recomp/README.md.")
 endif()
 
+# Small KAMO changes to the submodules, kept as patches in recomp/patches
+# (gbarecomp-*.patch, recomp-ui-*.patch) and applied to each checkout once. A patch that
+# already applies in reverse is skipped.
+find_package(Git REQUIRED)
+function(kamo_apply_patches prefix checkout)
+    file(GLOB patches "${CMAKE_CURRENT_SOURCE_DIR}/patches/${prefix}-*.patch")
+    list(SORT patches)
+    foreach(patch IN LISTS patches)
+        execute_process(COMMAND "${GIT_EXECUTABLE}" apply --reverse --check "${patch}"
+            WORKING_DIRECTORY "${checkout}" RESULT_VARIABLE applied OUTPUT_QUIET ERROR_QUIET)
+        if(NOT applied EQUAL 0)
+            execute_process(COMMAND "${GIT_EXECUTABLE}" apply "${patch}"
+                WORKING_DIRECTORY "${checkout}" RESULT_VARIABLE failed)
+            if(NOT failed EQUAL 0)
+                message(FATAL_ERROR "Cannot apply ${patch} to ${checkout}")
+            endif()
+            message(STATUS "KAMO: applied ${patch}")
+        endif()
+    endforeach()
+endfunction()
+kamo_apply_patches(gbarecomp "${KAMO_GBARECOMP_DIR}")
+kamo_apply_patches(recomp-ui "${KAMO_RECOMP_UI_DIR}")
+
 set(GBARECOMP_GENERATED_BIOS_DIR "${KAMO_BIOS_DIR}" CACHE PATH "" FORCE)
 set(GBARECOMP_NETPLAY ON CACHE BOOL "" FORCE)
 set(GBARECOMP_RUNTIME_UI_ROOT "${KAMO_RECOMP_UI_DIR}" CACHE PATH "" FORCE)

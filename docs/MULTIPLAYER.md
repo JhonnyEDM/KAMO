@@ -1,23 +1,20 @@
 # Multiplayer
 
 Kirby & The Amazing Mirror supports up to four players over the Game Boy Advance link cable, with
-one cartridge per player. KAMO runs that mode unchanged and replaces the cable.
+one cartridge per player. KAMO runs that mode unchanged and replaces the cable with the internet.
+Online play is GBARecomp's whole-session netplay; this page explains it for KAMO.
 
 ## The link cable
 
 The game uses the serial port in **multiplayer mode**. Player 1 is the parent; players 2–4 are
-children. Around sixteen times per frame the parent starts a transfer: every console sends 16 bits
-and receives the values of all four. The game exchanges input and synchronisation data this way
-and checks that every console stays in step, showing *Communication Error!* when one falls behind.
-
-KAMO emulates the serial port (`src/gba/link.h`). A `LinkCable` joins 2–4 consoles running in the
-same process and interleaves them in short slices, so their clocks never drift apart. The game's own
-lobby detects the cable and starts co-op exactly as it would on hardware.
+children. Many times per frame the parent starts a transfer: every console sends 16 bits and
+receives the values of all four. The game checks that every console stays in step and shows
+*Communication Error!* when one falls behind.
 
 ## Why the cable never goes over the network
 
 Emulators that offer link play usually forward each serial transfer to the other players. Each
-transfer must be answered almost immediately, sixteen times per frame, so even a short delay over
+transfer must be answered almost immediately, many times per frame, so even a short delay over
 the internet stalls the game or breaks its synchronisation.
 
 KAMO uses **input-based netcode** instead:
@@ -27,56 +24,49 @@ KAMO uses **input-based netcode** instead:
 ┌──────────────────────────────┐          ┌──────────────────────────────┐
 │ Console 1 ─┐                 │          │ Console 1 ─┐                 │
 │ Console 2 ─┼─ virtual cable  │          │ Console 2 ─┼─ virtual cable  │
-│ Console 3 ─┤                 │          │ Console 3 ─┤                 │
-│ Console 4 ─┘                 │          │ Console 4 ─┘                 │
 │ Shows console 1              │          │ Shows console 2              │
 └──────────────┬───────────────┘          └──────────────┬───────────────┘
                │      button presses, once per frame     │
                └──────────────── internet ───────────────┘
 ```
 
-- Every PC runs **all the consoles** of the session, joined by the virtual cable.
+- Every PC runs **all the consoles** of the match, joined by an in-process cable.
 - Only **button presses** travel over the network: a few bytes per player per frame.
-- The runtime is deterministic, so identical input produces identical consoles on every PC. Each
-  player sees and hears only their own console.
-- Running four consoles is light work for a modern PC; only the local one is drawn and played.
+- The recompiled game and the runtime are deterministic, so identical input gives identical
+  consoles on every PC. Each player sees and hears only their own console.
+- Netplay refuses the interpreter fallback: every piece of game code a match reaches must have
+  been recompiled. Code the recompiler missed is added to `recomp/game.toml`.
 
-### Input delay and rollback
+### Rollback and delay-sync
 
-The first version uses **lockstep with input delay**: input is applied a few frames after it is
-pressed (chosen automatically from the connection's ping), and a PC waits briefly if another
-player's input for a frame hasn't arrived.
+Two players use **rollback** by default: local input applies immediately, remote input is
+predicted, and when the prediction is wrong the consoles are restored and re-run. Three or four
+players use **delay-sync**: input applies a few frames after it is pressed (`--netplay-delay`,
+default 6). Both modes work at every size.
 
-A later version adds **rollback**: local input is applied immediately, remote input is predicted,
-and when the real input differs the consoles are restored to an earlier state and re-run. A GBA's
-state is small, so this is fast.
+### Starting and saving a match
 
-### Starting a session
+The ROM never travels over the network. Each player uses their own; the match checks the ROM,
+the BIOS and the KAMO build of every player before the first frame and refuses mismatches.
 
-All copies must start identically. When the host starts the game, every player sends their own save
-file to the others, every PC boots the consoles with those saves, and all of them enter the game's
-multiplayer mode on the same frame. At the end, each player keeps only their own console's save.
+Closing the game window asks every player to save together. The PCs agree on one frame and each
+writes the same **paired archive** (`netplay/session-<ID>.paired`) holding every console. A new
+match is resumed from that archive with `--continue-online` (newest archive) or
+`--netplay-resume <file>`; every player must resume the same match with the same KAMO version.
+Online progress is not written to the players' single-player saves.
 
-Every few seconds the PCs compare a checksum of the console state. If they ever differ, the host's
-state is sent to everyone to resynchronise.
+## Rooms
 
-The ROM never travels over the network: each player uses their own, and the session checks that
-everyone has the same version.
-
-## Sessions
+The launcher's **Netplay** screen (recomp-ui) connects to the public lobby server
+`netplay.retcomm.net`:
 
 | | Public | Private |
 |---|---|---|
-| Listed in **Browse sessions** | ✅ | ❌ |
-| Join with a 6-character code | ✅ | ✅ (the only way) |
-| Optional password | — | ✅ |
+| Listed in the room browser | ✅ | ❌ |
+| Password | — | ✅ |
 | Players | 2–4 | 2–4 |
 
-In the lobby each player picks a save file and marks themselves ready; the host starts the game.
-Everyone must run the same KAMO version with the same ROM.
-
-A small lobby service lists sessions, hands out codes and helps players connect directly. When a
-direct connection isn't possible, traffic goes through a relay (well under 1 KB/s per player).
-Players can also connect directly by IP address.
-
-Cheats, save states and fast forward are disabled in online play.
+The lobby only lists rooms of the same game build. During the match, input is relayed through the
+server's UDP relay, so no port forwarding is needed. **LAN / Direct IP** rooms connect the PCs
+directly and currently hold two players; the command line supports up to four (see
+[`recomp/README.md`](../recomp/README.md)).

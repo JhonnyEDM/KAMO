@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Getting started
-    url: https://github.com/JhonnyEDM/KAMO#getting-started
-    about: Supported ROM, first launch, and where saves live.
+  - name: How to play
+    url: https://github.com/JhonnyEDM/KAMO#playing
+    about: Supported ROM, BIOS setup, online rooms and continuing a match.
