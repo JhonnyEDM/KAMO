@@ -34,14 +34,16 @@ Put the paths of your ROM and BIOS in `local/rom.ini` and `local/bios.ini` (`pat
 | `boot` | The game boots headless through recompiled code |
 | `link2`, `link4` | 2 and 4 linked consoles reach co-op with scripted input |
 | `net-delay`, `net-rollback` | Two networked peers with 40 ms latency end with identical state |
+| `subgames` | Four consoles play each multiplayer sub-game |
 | `peers4` | Four real `KAMO.exe` peers over loopback save identical paired archives |
 
 All runs are windowless and muted; their output stays outside the repository.
 
-## Changes to GBARecomp
+## Changes to GBARecomp and recomp-ui
 
-GBARecomp is a submodule. KAMO's few changes to it live as patches in `recomp/patches/`
-(`gbarecomp-NNNN-*.patch`) and are applied to the checkout when CMake configures `recomp/`.
+Both are submodules. KAMO's few changes to them live as patches in `recomp/patches/`
+(`gbarecomp-NNNN-*.patch`, `recomp-ui-NNNN-*.patch`) and are applied to the checkouts when CMake
+configures `recomp/`.
 Keep them small, and prefer proposing the change upstream.
 
 ## Pull requests

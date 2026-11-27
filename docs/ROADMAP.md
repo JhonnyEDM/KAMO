@@ -8,7 +8,8 @@ runtime used up to 0.1.x was retired in 0.2.x.
 - [x] Game and BIOS recompiled to C++ from the player's own files; nothing generated is committed
 - [x] Cold boot to gameplay through recompiled code
 - [x] Launcher window (recomp-ui): ROM and BIOS check, settings, controls
-- [ ] Coverage of the whole game, including bosses and sub-games
+- [x] The three multiplayer sub-games with four consoles (test `subgames`)
+- [ ] Coverage of the whole game, including bosses
 - [ ] Full single-player playthrough without issues
 
 ## 2. Online co-op

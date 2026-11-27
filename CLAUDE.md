@@ -30,7 +30,7 @@ Static recompilation on GBARecomp, C++20, CMake, MSYS2 MinGW. Start with `README
 ## Workflow
 
 - Build: `tools/kamo_build.ps1`. Test: `tools/kamo_test.ps1` (ROM and BIOS paths in
-  `local/rom.ini` and `local/bios.ini`); all six tests must pass before committing.
+  `local/rom.ini` and `local/bios.ini`); every test must pass before committing.
 - Multiplayer changes: also check a real two-window match when possible.
 - Keep `docs/ROADMAP.md` up to date.
 - `CLAUDE.local.md` (git-ignored) holds personal preferences of whoever is working locally.

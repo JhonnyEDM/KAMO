@@ -68,6 +68,29 @@ foreach ($n in 2, 4) {
     Report "link$n" ($LASTEXITCODE -eq 0 -and -not $problem) "exit=$LASTEXITCODE $problem (screens: $OutDir\link$n-seat*.ppm)"
 }
 
+# Four consoles open each multiplayer sub-game (Speed Eaters, Crackity Hack, Kirby Wave Ride)
+# from the Sub-Games menu and play it with scripted input. A missed function fails the run.
+if (Want "subgames") {
+    $fails = @()
+    foreach ($game in 0, 1, 2) {
+        $l = [System.Collections.Generic.List[string]]::new()
+        function Press($f, $m) { $l.Add("$f $m $m $m $m"); $l.Add("$($f + 6) 0 0 0 0") }
+        Press 600 1; Press 700 1; Press 800 1; Press 880 128; Press 940 1   # title, file, Sub-Games
+        $f = 990; for ($d = 0; $d -lt $game; $d++) { Press $f 128; $f += 40 }
+        Press ($f + 10) 1; Press ($f + 90) 128; Press ($f + 130) 1          # the game, Multi Player
+        $r = New-Object Random (10 + $game); $f += 200
+        while ($f -lt 7000) {
+            $c = @(1, 1, 1, 2, 16, 32, 64, 128, 17, 33, 0)[$r.Next(11)]
+            $l.Add("$f $c $c $c $c"); $l.Add("$($f + 4) 0 0 0 0"); $f += $r.Next(8, 30)
+        }
+        $l | Set-Content "$OutDir\sub$game.inputs"
+        & $probe $rom $bios cold "$OutDir\sub$game" 4 7200 "$OutDir\sub$game.inputs" *> "$OutDir\sub$game.log"
+        $problem = First-Problem "$OutDir\sub$game.log"
+        if ($LASTEXITCODE -ne 0 -or $problem) { $fails += "game$game exit=$LASTEXITCODE $problem" }
+    }
+    Report "subgames" ($fails.Count -eq 0) "$($fails -join '; ') (screens: $OutDir\sub*-seat0.ppm)"
+}
+
 if ((Want "net-delay") -or (Want "net-rollback")) {
     $warm = "$OutDir\warm2"
     "1 0 0" | Set-Content "$OutDir\none.inputs"
