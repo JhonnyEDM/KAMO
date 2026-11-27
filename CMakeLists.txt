@@ -5,7 +5,7 @@ if(APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version")
 endif()
 
-project(kamo LANGUAGES C CXX VERSION 0.1.1)
+project(kamo LANGUAGES C CXX VERSION 0.1.2)
 # Version shown to players and used by updates and online play; the suffix marks test builds.
 set(KAMO_VERSION_STRING "${PROJECT_VERSION}-alpha")
 

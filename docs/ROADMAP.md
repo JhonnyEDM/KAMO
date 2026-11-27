@@ -15,7 +15,7 @@
 - [x] The game's lobby detects 2–4 players and starts co-op
 - [x] Four consoles stay in sync; identical input gives identical frames
 - [ ] Play with 2–4 controllers on one PC
-- [ ] Accurate instruction timing (linked consoles currently run the CPU at 125 %)
+- [ ] Accurate instruction timing (linked consoles currently run the CPU at 150 %)
 - [ ] Long sessions: bosses, area changes, multiplayer sub-games, each player's save
 
 ## 3. Online co-op
@@ -26,6 +26,7 @@
 - [x] Automatic input delay from the measured ping
 - [x] Frame pacing: a PC that runs ahead slows down slightly instead of stalling
 - [x] In-window menu to host or join, and self-update from GitHub releases
+- [x] Session recordings (`kamo_link --replay`) to reproduce problems exactly
 - [ ] Session start with each player's own save
 - [ ] Resynchronisation after a desync
 - [ ] Lobby service: public and private sessions, codes, ready / start / kick

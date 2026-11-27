@@ -213,8 +213,40 @@ struct Match {
     long long stalled_frame = -1;
     double acc = 0, ahead = 0;          // pacing: time owed, smoothed frames ahead of the others
     std::vector<std::int16_t> audio, discard;
+    // Recording of every player's input, one line per frame, so a session can be replayed with
+    // `kamo_link --replay <file>` to reproduce problems exactly.
+    std::ofstream rec;
+    fs::path rec_path;
 
     bool active() const { return !consoles.empty(); }
+
+    void start_recording(int players, int delay, int slot) {
+        char* base = SDL_GetPrefPath("KAMO", "Netplay");
+        fs::path dir = (base ? fs::path(base) : fs::temp_directory_path()) / "recordings";
+        SDL_free(base);
+        std::error_code ec;
+        fs::create_directories(dir, ec);
+        // Keep the 10 newest recordings.
+        std::vector<fs::path> old;
+        for (auto& e : fs::directory_iterator(dir, ec))
+            if (e.path().extension() == ".kinp") old.push_back(e.path());
+        std::sort(old.begin(), old.end());
+        while (old.size() >= 10) {
+            fs::remove(old.front(), ec);
+            old.erase(old.begin());
+        }
+        SDL_DateTime t{};
+        SDL_Time now = 0;
+        SDL_GetCurrentTime(&now);
+        SDL_TimeToDateTime(now, &t, true);
+        char name[64];
+        std::snprintf(name, sizeof name, "session-%04d%02d%02d-%02d%02d%02d.kinp", t.year, t.month, t.day, t.hour,
+                      t.minute, t.second);
+        rec_path = dir / name;
+        rec.open(rec_path);
+        rec << "KAMO-INPUT 1\nversion " << KAMO_VERSION << "\nplayers " << players << "\ndelay " << delay
+            << "\nlocal " << slot + 1 << "\nframes\n";
+    }
 
     void boot(const std::vector<std::uint8_t>& rom, int players) {
         fs::path dir = fs::temp_directory_path() / "kamo-netplay";
@@ -237,6 +269,7 @@ struct Match {
     void end() {
         cable.reset();
         consoles.clear();
+        if (rec.is_open()) rec.close();
     }
 
     // Advances as many frames as are due. Returns false once `quit_frame` is reached.
@@ -261,6 +294,14 @@ struct Match {
                 break;
             }
             for (int i = 0; i < s.players(); ++i) consoles[size_t(i)]->set_keys(s.input(i, frame));
+            if (rec.is_open()) {
+                char line[32];
+                int n = 0;
+                for (int i = 0; i < s.players(); ++i)
+                    n += std::snprintf(line + n, sizeof line - size_t(n), i ? " %03x" : "%03x", s.input(i, frame));
+                rec << line << '\n';
+                if (frame % 600 == 0) rec.flush();
+            }
             cable->run_frame();
             ++frame;
             acc -= period;
@@ -548,6 +589,7 @@ int main(int argc, char** argv) {
             else if (session.state() == net::State::Running) {
                 if (!match.active()) {
                     match.boot(rom->data, session.players());
+                    match.start_recording(session.players(), session.delay(), session.local_slot());
                     started_at = ImGui::GetTime();
                     dt = 0;
                 }

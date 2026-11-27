@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <memory>
 #include <string>
 #include <utility>
@@ -66,6 +67,8 @@ int main(int argc, char** argv) {
     long trace_from = -1;
     int cpu_pct = 0;  // 0 = the cable default (LinkCable::kLinkCpuSpeedPct)
     std::vector<Script> scripts(4);
+    std::vector<std::vector<std::uint16_t>> replay;  // per frame, per player (from --replay)
+    bool quiet = false;
     for (int i = 1; i < argc; ++i) {
         std::string a = argv[i];
         auto next = [&]() -> std::string { return i + 1 < argc ? argv[++i] : ""; };
@@ -89,8 +92,33 @@ int main(int argc, char** argv) {
             }
         } else if (a == "--trace-from") trace_from = std::strtol(next().c_str(), nullptr, 10);
         else if (a == "--cpu-pct") cpu_pct = std::atoi(next().c_str());
+        else if (a == "--quiet") quiet = true;
+        else if (a == "--replay") {
+            // A KAMO-Netplay recording: header lines, then "frames", then one line per frame.
+            std::ifstream in(next());
+            std::string line;
+            bool body = false;
+            while (std::getline(in, line)) {
+                if (!body) {
+                    if (line.rfind("players ", 0) == 0) units = std::atoi(line.c_str() + 8);
+                    body = line == "frames";
+                    continue;
+                }
+                std::vector<std::uint16_t> keys;
+                for (size_t p = 0; p < line.size();) {
+                    char* end = nullptr;
+                    keys.push_back(std::uint16_t(std::strtoul(line.c_str() + p, &end, 16)));
+                    p = size_t(end - line.c_str());
+                    while (p < line.size() && line[p] == ' ') ++p;
+                    if (end == line.c_str()) break;
+                }
+                replay.push_back(std::move(keys));
+            }
+            if (replay.empty()) return usage();
+        }
         else return usage();
     }
+    if (!replay.empty() && frames <= 0) frames = long(replay.size());
     if (rom_path.empty() || out.empty() || frames <= 0 || units < 2 || units > 4) return usage();
 
     auto loaded = kamo::load_rom(rom_path);
@@ -121,18 +149,34 @@ int main(int argc, char** argv) {
     };
 
     u64 last_transfers = 0;
+    u64 prev_transfers = 0;
+    int still = 0;
+    long stall_reported = -1;
     for (long f = 0; f < frames; ++f) {
         for (int u = 0; u < units; ++u) {
             Script& s = scripts[size_t(u)];
             while (s.next < s.events.size() && s.events[s.next].first <= f)
                 consoles[size_t(u)]->set_keys(s.events[s.next++].second);
         }
+        if (f < long(replay.size()))
+            for (int u = 0; u < units && u < int(replay[size_t(f)].size()); ++u)
+                consoles[size_t(u)]->set_keys(replay[size_t(f)][size_t(u)]);
         if (f == trace_from)
             for (auto& c : consoles) c->sio_trace = true;
         cable.run_frame();
         for (long d : dump_at)
             if (d == f + 1) dump(f + 1, false);
-        if ((f + 1) % 60 == 0) {
+        // The link stalls when a console misses its slot ("Communication Error!" in the game).
+        if (stall_reported < 0 && cable.transfers() > 0 && cable.transfers() == prev_transfers) {
+            if (++still >= 30) {
+                std::printf("LINK STOPPED at frame %ld (no transfers for 30 frames)\n", f + 1 - 30);
+                stall_reported = f + 1 - 30;
+            }
+        } else {
+            still = 0;
+        }
+        prev_transfers = cable.transfers();
+        if (!quiet && (f + 1) % 60 == 0) {
             std::printf("frame %5ld  dropped %llu  transfers %8llu (+%llu)  mode:", f + 1, (unsigned long long)cable.dropped(), (unsigned long long)cable.transfers(),
                         (unsigned long long)(cable.transfers() - last_transfers));
             for (int u = 0; u < units; ++u)
