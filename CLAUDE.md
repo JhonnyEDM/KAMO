@@ -30,6 +30,17 @@ C++20, CMake, SDL3, Dear ImGui. Start with `README.md`, `docs/ARCHITECTURE.md`,
 - Linked consoles run the CPU at 200 % (`LinkCable::kLinkCpuSpeedPct`) to make up for
   instruction timing that is slower than hardware; see the roadmap.
 
+## Recompiled build (`recomp/`)
+
+- Built on GBARecomp (submodule `external/gbarecomp`, PolyForm Noncommercial). Its generated
+  game and BIOS code lives in the git-ignored `generated/`; see `recomp/README.md`.
+- Netplay there is GBARecomp's whole-session netplay: every peer runs all linked consoles,
+  only input crosses the network. Netplay refuses the interpreter fallback, so add code the
+  recompiler missed to `recomp/game.toml` (`[[extra_func]]`) and regenerate.
+- The generated code is large: compile with 64 codegen shards and at most `-j6`, or the
+  build runs out of RAM.
+- Verify linked play with `KAMOViewProbe` and `tests/link/view_network_loopback.py`.
+
 ## Workflow
 
 - Build: `.\build.ps1` on Windows, or the CMake commands in the README. Run `ctest --test-dir build`

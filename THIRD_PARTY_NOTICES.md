@@ -39,9 +39,36 @@ components.
 ```
 
 
+## GBARecomp
+
+The recompiled build in `recomp/` uses GBARecomp (https://github.com/mstan/gbarecomp) by
+Matthew Stanley as the `external/gbarecomp` submodule: the ARM/Thumb recompiler that translates
+the player's ROM and BIOS to C++, and the runtime the recompiled game runs on.
+
+GBARecomp is licensed under the PolyForm Noncommercial License 1.0.0
+(https://polyformproject.org/licenses/noncommercial/1.0.0). The full text is in
+`external/gbarecomp/LICENSE` and in the `licenses` folder of each download. Builds that include
+GBARecomp may only be used and shared for noncommercial purposes. KAMO's own source code stays
+under the MIT License.
+
+GBARecomp includes these components, each under its own license (texts in their folders under
+`external/gbarecomp/external/`):
+
+| Component | License |
+|---|---|
+| [arm-recomp-core](https://github.com/mstan/arm-recomp-core) | MIT, Copyright (c) 2026 Matthew Stanley |
+| [recomp-net](https://github.com/RetroPortingToolKit/recomp-net) (netplay) | MIT, Copyright (c) 2026 recomp-net contributors |
+| [rbengine](https://github.com/RetroPortingToolKit/rbengine) (rollback) | MIT, Copyright (c) 2026 retcomm-rbengine contributors |
+| recomp-audio-core, recomp-input-core, recomp-persistence-core, recomp-diagnostics-core | MIT, Copyright (c) 2026 Matthew Stanley |
+| recomp-presentation-core | MIT, Copyright (c) 2026 Alex Vanderveen / TechnicallyComputers |
+| recomp-mod-core | PolyForm Noncommercial 1.0.0 |
+
+The recompiled build links SDL2 and zlib from the MSYS2 MinGW toolchain (licenses below).
+
 ## SDL 3
 
 Simple DirectMedia Layer, built from source and linked statically. https://libsdl.org
+The recompiled build uses SDL 2 under the same license, shipped as `SDL2.dll`.
 
 ```
 Copyright (C) 1997-2025 Sam Lantinga <slouken@libsdl.org>

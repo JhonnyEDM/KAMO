@@ -29,11 +29,11 @@ cmake --build build-gbarecomp --target gba_recompile
 
 # 2. Recompile the BIOS and the game (local output only)
 build-gbarecomp/gba_recompile.exe --bios <gba_bios.bin> --config external/gbarecomp/bios/gba_bios.toml --out generated/bios
-python external/gbarecomp/tools/cli.py build --rom <kirby.gba> --output generated/b8ke --codegen-shards 16
+python external/gbarecomp/tools/cli.py build --rom <kirby.gba> --output generated/b8ke --config recomp/game.toml --codegen-shards 64
 
 # 3. The game
 cmake -S recomp -B build-recomp -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build-recomp --target KAMO
+cmake --build build-recomp --target KAMO -j 6   # the generated code needs ~2 GB RAM per job
 ```
 
 `tools/cli.py` looks for the recompiler at

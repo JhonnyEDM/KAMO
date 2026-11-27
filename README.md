@@ -39,7 +39,7 @@ KAMO is in early development. There are no releases yet.
 | Online co-op by direct connection (test build: `KAMO-Netplay`) | 🧪 Testing |
 | Local multiplayer on one PC | 🔨 In progress |
 | Public and private sessions | 📋 Planned |
-| Native code through static recompilation | 📋 Planned |
+| Native code through static recompilation ([`recomp/`](recomp/README.md)) | 🧪 Testing |
 
 See the [roadmap](docs/ROADMAP.md) for details.
 
@@ -144,6 +144,7 @@ On Linux, install SDL3's usual build dependencies first (see `.github/workflows/
 | `src/gba` | Game Boy Advance runtime: CPU, graphics, sound, BIOS calls and the virtual link cable |
 | `src/app`, `src/options` | Launcher, settings menu, input, saves and states |
 | `src/update` | Automatic updates from GitHub Releases |
+| `recomp/` | Recompiled build on GBARecomp: game host, game configuration, test tools |
 | `tools/` | Developer tools: icon renderer, code tracer, headless link-cable runner |
 | `tests/` | Automated tests |
 | `docs/` | Architecture, multiplayer design and roadmap |
@@ -158,6 +159,11 @@ files, saves, save states, extracted assets, code generated from the ROM, or scr
 - KAMO is built on [KNID](https://github.com/sweatyeggs69/KNID), the native PC port of
   *Kirby: Nightmare in Dream Land* by sweatyeggs69, used under the MIT License. Its GBA runtime,
   launcher and packaging are the foundation KAMO started from.
+- The recompiled build (`recomp/`) runs on [GBARecomp](https://github.com/mstan/gbarecomp) by
+  Matthew Stanley, used under the PolyForm Noncommercial License 1.0.0, with its components
+  [arm-recomp-core](https://github.com/mstan/arm-recomp-core),
+  [recomp-net](https://github.com/RetroPortingToolKit/recomp-net) and
+  [rbengine](https://github.com/RetroPortingToolKit/rbengine) (MIT).
 - [SDL](https://libsdl.org), [ENet](https://github.com/lsalzman/enet), [Dear ImGui](https://github.com/ocornut/imgui),
   [stb](https://github.com/nothings/stb), [rcheevos](https://github.com/RetroAchievements/rcheevos),
   [DM Sans](https://github.com/googlefonts/dm-fonts) and [Lucide](https://lucide.dev).
@@ -166,4 +172,6 @@ Full license texts are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## License
 
-KAMO is released under the [MIT License](LICENSE).
+KAMO is released under the [MIT License](LICENSE). Builds of the recompiled version include
+GBARecomp and are therefore limited to noncommercial use (see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)).

@@ -33,12 +33,19 @@
 - [ ] NAT traversal and relay
 - [ ] Rollback
 
-## 4. Static recompilation
+## 4. Static recompilation 🧪
 
-- [ ] Function tracer
-- [ ] ARM/Thumb to C recompiler
-- [ ] Runtime integration with interpreter fallback
-- [ ] Verification mode: recompiled code against the interpreter
+Built on GBARecomp (`recomp/`, see its README).
+
+- [x] Game and BIOS recompiled to C++ from the player's own files; nothing generated is committed
+- [x] Cold boot to gameplay with no interpreter fallback in the tested route
+- [x] Four linked consoles in one process reach the hub with no link errors
+- [x] Online through GBARecomp netplay: four peers (direct IP, delay-sync) end with identical state
+- [x] Code missed by the recompiler is logged and listed in `recomp/game.toml`
+- [ ] Coverage of the whole game, including bosses and multiplayer sub-games
+- [ ] In-window lobby: create or join public and private sessions
+- [ ] Each player's own save in online sessions
+- [ ] Release builds of the recompiled version
 
 ## 5. Release
 
