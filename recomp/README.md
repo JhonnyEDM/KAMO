@@ -41,8 +41,8 @@ cmake --build build-recomp --target KAMO -j 6   # the generated code needs ~2 GB
 
 ## Run
 
-Start `KAMO.exe` with no arguments to open the launcher. Pick your ROM and BIOS there, then
-press **Play**. `--rom <kirby.gba> --bios <gba_bios.bin>` boots straight into the game.
+Start `KAMO.exe` with no arguments to open the launcher. Pick your ROM there and press **Play**;
+the first time, KAMO asks for your BIOS file. `--rom <kirby.gba> --bios <gba_bios.bin>` boots straight into the game.
 
 ## Online
 
