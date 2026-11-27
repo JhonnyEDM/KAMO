@@ -60,18 +60,18 @@ How it works is described in [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
 ### Trying it now
 
-Download `KAMO-Netplay.exe` from the [latest release](https://github.com/JhonnyEDM/KAMO/releases) (Windows):
+Download `KAMO-<version>-Windows-x64.zip` from the [latest release](https://github.com/JhonnyEDM/KAMO/releases/latest),
+extract it and run `KAMO.exe`. This is the recompiled build (see [`recomp/`](recomp/README.md)); it
+needs your own ROM and your own GBA BIOS.
 
-1. Open it and click **Choose ROM...** to pick your own dump.
-2. One player clicks **Host** and shares one of the addresses shown (click to copy). The others
-   type that address and click **Join**.
+1. Pick your ROM in the launcher. The first time you press **Play**, KAMO asks for the BIOS.
+2. Press **Netplay**. One player creates a room (public, or private with a password); the others
+   join it from the list. Online rooms hold up to four players; LAN / direct-IP rooms hold two.
 3. When everyone is in, the game boots. On every console choose **Start Game > Multi Player**;
    player 1 confirms.
 
-The input delay is picked automatically from the ping, and KAMO-Netplay updates itself when a new
-version is released. The host must be reachable on UDP port 7845: forward it on the router, or
-use a virtual LAN such as Radmin VPN, ZeroTier or Tailscale. Sessions currently start from a
-fresh game; using your own save comes next.
+Everyone needs the same KAMO version and the same ROM. Progress from an online session is saved
+as a shared session file that you can resume from.
 
 ## Getting started
 
