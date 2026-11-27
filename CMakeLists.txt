@@ -299,6 +299,27 @@ if(TARGET SDL3::SDL3)
         target_link_options(kamo PRIVATE "LINKER:-sectcreate,__TEXT,__info_plist,${kamo_plist}")
         set_property(TARGET kamo APPEND PROPERTY LINK_DEPENDS "${kamo_plist}")
     endif()
+    # Online play: ENet (MIT) for the network, then the netplay session (no SDL) and the
+    # KAMO-Netplay test program.
+    FetchContent_Declare(enet
+        GIT_REPOSITORY https://github.com/lsalzman/enet.git
+        GIT_TAG v1.3.18)
+    FetchContent_MakeAvailable(enet)
+    target_include_directories(enet INTERFACE ${enet_SOURCE_DIR}/include)
+    add_library(kamo_net STATIC src/net/netplay.cpp)
+    target_include_directories(kamo_net PUBLIC src)
+    target_link_libraries(kamo_net PUBLIC enet)
+    if(WIN32)
+        target_link_libraries(kamo_net PUBLIC ws2_32 winmm)
+    endif()
+    add_executable(kamo_netplay src/netplay/main.cpp)
+    set_target_properties(kamo_netplay PROPERTIES OUTPUT_NAME KAMO-Netplay)
+    target_compile_definitions(kamo_netplay PRIVATE KAMO_VERSION="${PROJECT_VERSION}")
+    target_link_libraries(kamo_netplay PRIVATE kamo_net kamo_gba kamo_core SDL3::SDL3)
+    if(WIN32)
+        target_sources(kamo_netplay PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/kamo.rc" "${kamo_ico}")
+    endif()
+
     if(KAMO_PACKAGE AND WIN32)
         # Release file: the single self-contained KAMO.exe (static runtime, SDL, zlib; licenses
         # embedded, see F1 > About and --licenses), copied under its release name.

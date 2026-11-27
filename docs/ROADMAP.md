@@ -20,10 +20,12 @@
 
 ## 3. Online co-op
 
-- [ ] Input exchange over UDP with automatic input delay
-- [ ] Session start: save exchange and a common boot
-- [ ] Desync detection and resynchronisation
-- [ ] Direct connection by IP address
+- [x] Input exchange over UDP (ENet), lockstep with input delay
+- [x] Direct connection by IP address (`KAMO-Netplay` test build)
+- [x] Version and ROM check on join; desync detection by state hashes
+- [ ] Automatic input delay from ping
+- [ ] Session start with each player's own save
+- [ ] Resynchronisation after a desync
 - [ ] Lobby service: public and private sessions, codes, ready / start / kick
 - [ ] NAT traversal and relay
 - [ ] Rollback

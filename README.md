@@ -35,9 +35,10 @@ KAMO is in early development. There are no releases yet.
 | Single player, from start to finish | ✅ Playable |
 | Keyboard and controllers, remapping | ✅ |
 | Battery saves, save states, fast forward, rewind | ✅ |
-| Local link cable between 2–4 consoles | ✅ Working (developer tool, no window yet) |
+| Link cable between 2–4 consoles | ✅ |
+| Online co-op by direct connection (test build: `KAMO-Netplay`) | 🧪 Testing |
 | Local multiplayer on one PC | 🔨 In progress |
-| Online co-op with public and private sessions | 📋 Planned |
+| Public and private sessions | 📋 Planned |
 | Native code through static recompilation | 📋 Planned |
 
 See the [roadmap](docs/ROADMAP.md) for details.
@@ -56,6 +57,20 @@ and only changes how the consoles talk to each other.
 - **Your save is yours.** Each player keeps their own progress, just like each cartridge did.
 
 How it works is described in [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
+
+### Trying it now
+
+The test build includes `KAMO-Netplay`, a small program for online co-op by direct connection:
+
+1. Everyone needs the same KAMO version and their own ROM.
+2. One player runs `KAMO-Netplay`, picks their ROM and chooses **host**. The others choose
+   **join** and type the host's IP address.
+3. The game starts when everyone is in. Each player sees their own Kirby; then pick
+   **Start Game > Multi Player** on every console and player 1 confirms.
+
+The host must be reachable on UDP port 7845: forward it on the router, or use a virtual LAN
+(Tailscale, ZeroTier, Radmin VPN). Sessions currently start from a fresh game; using your own
+save comes next.
 
 ## Getting started
 
@@ -142,7 +157,7 @@ files, saves, save states, extracted assets, code generated from the ROM, or scr
 - KAMO is built on [KNID](https://github.com/sweatyeggs69/KNID), the native PC port of
   *Kirby: Nightmare in Dream Land* by sweatyeggs69, used under the MIT License. Its GBA runtime,
   launcher and packaging are the foundation KAMO started from.
-- [SDL](https://libsdl.org), [Dear ImGui](https://github.com/ocornut/imgui),
+- [SDL](https://libsdl.org), [ENet](https://github.com/lsalzman/enet), [Dear ImGui](https://github.com/ocornut/imgui),
   [stb](https://github.com/nothings/stb), [rcheevos](https://github.com/RetroAchievements/rcheevos),
   [DM Sans](https://github.com/googlefonts/dm-fonts) and [Lucide](https://lucide.dev).
 

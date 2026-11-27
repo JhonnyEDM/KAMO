@@ -83,3 +83,16 @@ Keep `out/` outside the repository; its images come from the game.
 
 - One topic per pull request, with a short description of what changed and how you tested it.
 - Update `docs/ROADMAP.md` when a roadmap item changes.
+
+## Online: `KAMO-Netplay`
+
+Two copies on one PC, connected over the loopback interface (no firewall prompt):
+
+```sh
+build/KAMO-Netplay --host --loopback --players 2 --rom <rom> --headless --frames 3600 --input <script>
+build/KAMO-Netplay --join 127.0.0.1 --rom <rom> --headless --frames 3600 --input <script>
+```
+
+Both print `final frame N hash H` at the end; the hashes must match, and no `DESYNC` line may
+appear. Without `--headless` each copy opens a window and reads the keyboard and the first
+controller.
