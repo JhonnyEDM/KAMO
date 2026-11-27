@@ -41,8 +41,9 @@ cmake --build build-recomp --target KAMO -j 6   # the generated code needs ~2 GB
 
 ## Run
 
-Start `KAMO.exe` with no arguments to open the launcher. Pick your ROM there and press **Play**;
-the first time, KAMO asks for your BIOS file. `--rom <kirby.gba> --bios <gba_bios.bin>` boots straight into the game.
+Start `KAMO.exe` with no arguments to open the launcher. Pick your ROM there, choose your BIOS
+in **Settings**, and press **Play** (it stays disabled until both are set).
+`--rom <kirby.gba> --bios <gba_bios.bin>` boots straight into the game.
 
 ## Online
 
@@ -64,9 +65,10 @@ KAMO.exe --rom <rom> --bios <bios> --netplay-players 4 --netplay-seat 0 --netpla
 KAMO.exe --rom <rom> --bios <bios> --netplay-players 4 --netplay-seat 1 --netplay-session 123 --netplay-bind 0.0.0.0:7846 --netplay-peer <host-ip>:7845
 ```
 
-Closing the game asks every player to save the session together; the shared checkpoint
-goes to `netplay/session-<ID>.paired` (`--netplay-checkpoint` overrides it). Resume with
-`--netplay-resume <file>` and a new session number.
+Closing the game window asks every player to save the match together; the shared archive
+goes to `netplay/session-<ID>.paired` (`--netplay-checkpoint` overrides it). To continue,
+every player starts KAMO with `--continue-online` (the newest archive; this also works with the
+launcher and the lobby) or `--netplay-resume <file>`, with a new session number.
 
 Three or four players use delay-sync by default, two players rollback. `--netplay-delay 2..20`
 sets the input delay (default 6). Every player needs a build from the same sources and the
@@ -93,6 +95,13 @@ Code the game reaches but the recompiler missed is run by an interpreter fallbac
 single player and logged to `recomp_master_misses_B8KE.toml.frag` next to the executable.
 Review it, add genuine entries to `game.toml` and regenerate. Netplay refuses the fallback, so
 linked play needs that coverage.
+
+## Packaging
+
+A release zip holds `KAMO.exe`, the DLLs it needs from `C:\msys64\mingw64\bin` (`SDL2.dll`,
+`libgcc_s_seh-1.dll`, `libstdc++-6.dll`, `libwinpthread-1.dll`), recomp-ui's `assets/` folder,
+a `licenses/` folder and the files in `recomp/package/`. Never include a ROM, BIOS, save or
+anything from `generated/`.
 
 ## License
 

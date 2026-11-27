@@ -5,9 +5,10 @@ open-source projects, each under its own license.
 
 ## KNID
 
-KAMO started from the source code of KNID (https://github.com/sweatyeggs69/KNID) by sweatyeggs69: the GBA
-runtime (src/gba), the frontend (src/app, src/options), the updater (src/update), the tools,
-the packaging and the build files. Renamed and modified for KAMO.
+KAMO versions up to 0.1.x were built on the source code of KNID
+(https://github.com/sweatyeggs69/KNID) by sweatyeggs69: its GBA runtime, frontend, updater, tools
+and packaging. That code was removed when KAMO moved to static recompilation; it remains in the
+repository history under this license.
 
 ```
 MIT License
@@ -63,7 +64,9 @@ GBARecomp includes these components, each under its own license (texts in their 
 | recomp-presentation-core | MIT, Copyright (c) 2026 Alex Vanderveen / TechnicallyComputers |
 | recomp-mod-core | PolyForm Noncommercial 1.0.0 |
 
-The recompiled build links SDL2 and zlib from the MSYS2 MinGW toolchain (licenses below).
+The recompiled build links SDL2 and zlib from the MSYS2 MinGW toolchain (licenses below), and
+the GCC runtime libraries (`libgcc_s_seh-1.dll`, `libstdc++-6.dll`, `libwinpthread-1.dll`), which
+are covered by the GCC Runtime Library Exception..
 
 ## recomp-ui
 
@@ -85,10 +88,9 @@ The online lobby connects to the public lobby server `netplay.retcomm.net`, run 
 recomp-net project. It receives the game name, the build version, a fingerprint of the ROM
 (not the ROM itself) and the player name you choose.
 
-## SDL 3
+## SDL2
 
-Simple DirectMedia Layer, built from source and linked statically. https://libsdl.org
-The recompiled build uses SDL 2 under the same license, shipped as `SDL2.dll`.
+Simple DirectMedia Layer 2, shipped as `SDL2.dll` with the Windows download (MSYS2 MinGW build). https://libsdl.org
 
 ```
 Copyright (C) 1997-2025 Sam Lantinga <slouken@libsdl.org>
@@ -110,124 +112,9 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 ```
 
-## ENet
-
-Reliable UDP networking for online play, built from source and linked statically.
-https://github.com/lsalzman/enet
-
-```
-Copyright (c) 2002-2024 Lee Salzman
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-```
-
-## Dear ImGui
-
-Immediate-mode user interface library, compiled in. https://github.com/ocornut/imgui
-
-```
-The MIT License (MIT)
-
-Copyright (c) 2014-2025 Omar Cornut
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-## rcheevos
-
-RetroAchievements runtime library, compiled in. https://github.com/RetroAchievements/rcheevos
-
-```
-MIT License
-
-Copyright (c) 2018 RetroAchievements.org
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-## stb_image
-
-PNG decoder for achievement badges, compiled in. https://github.com/nothings/stb
-Used under its MIT license alternative (it is also available as public domain).
-
-```
-MIT License
-
-Copyright (c) 2017 Sean Barrett
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-## DM Sans font
-
-The interface font (DM Sans Regular, SemiBold and Bold), embedded in the program.
-Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts).
-Licensed under the SIL Open Font License, Version 1.1. The full license text is in
-`assets/fonts/DMSans-OFL.txt` in the source and in the `licenses` folder of each download.
-
-## Lucide icons
-
-A few interface icons (play, settings, log out and similar), embedded in the program as a
-small font. https://lucide.dev. Licensed under the ISC License; the full text is in
-`assets/fonts/Lucide-LICENSE.txt` in the source and in the `licenses` folder of each download.
-
 ## zlib
 
-Used to compress save states: the operating system's zlib on macOS and Linux, and a
-statically linked zlib (from vcpkg) on Windows. https://zlib.net
+Linked into the recompiled build from the MSYS2 MinGW toolchain. https://zlib.net
 
 ```
 Copyright (C) 1995-2024 Jean-loup Gailly and Mark Adler
