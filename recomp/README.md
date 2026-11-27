@@ -21,7 +21,7 @@ git-ignored.
 From the repository root, with `C:\msys64\mingw64\bin` first on `PATH`:
 
 ```powershell
-git submodule update --init --recursive external/gbarecomp
+git submodule update --init --recursive external/gbarecomp external/recomp-ui
 
 # 1. The recompiler
 cmake -S external/gbarecomp -B build-gbarecomp -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -41,11 +41,19 @@ cmake --build build-recomp --target KAMO -j 6   # the generated code needs ~2 GB
 
 ## Run
 
-```powershell
-build-recomp/KAMO.exe --rom <kirby.gba> --bios <gba_bios.bin>
-```
+Start `KAMO.exe` with no arguments to open the launcher. Pick your ROM and BIOS there, then
+press **Play**. `--rom <kirby.gba> --bios <gba_bios.bin>` boots straight into the game.
 
-## Online (direct IP, up to four players)
+## Online
+
+In the launcher, press **Netplay**:
+
+- **Online** rooms go through the public lobby server: create a room (public, or private with a
+  password) for up to four players, or join one from the list. Everyone needs the same KAMO
+  version and the same ROM; the lobby only shows compatible rooms.
+- **LAN / Direct IP** rooms work without the server but currently hold two players.
+
+### Direct IP from the command line (up to four players)
 
 Everyone uses the same session number. Player 1 hosts; the others connect to player 1:
 

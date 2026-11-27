@@ -43,7 +43,9 @@ Built on GBARecomp (`recomp/`, see its README).
 - [x] Online through GBARecomp netplay: four peers (direct IP, delay-sync) end with identical state
 - [x] Code missed by the recompiler is logged and listed in `recomp/game.toml`
 - [ ] Coverage of the whole game, including bosses and multiplayer sub-games
-- [ ] In-window lobby: create or join public and private sessions
+- [x] Launcher window and online lobby (recomp-ui): create or join public and private rooms
+- [ ] Four-player room tested between real PCs over the internet
+- [ ] LAN / direct-IP rooms with more than two seats (the lobby server has four)
 - [ ] Each player's own save in online sessions
 - [ ] Release builds of the recompiled version
 

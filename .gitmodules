@@ -1,3 +1,6 @@
 [submodule "external/gbarecomp"]
 	path = external/gbarecomp
 	url = https://github.com/mstan/gbarecomp.git
+[submodule "external/recomp-ui"]
+	path = external/recomp-ui
+	url = https://github.com/mstan/recomp-ui.git

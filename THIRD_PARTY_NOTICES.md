@@ -65,6 +65,26 @@ GBARecomp includes these components, each under its own license (texts in their 
 
 The recompiled build links SDL2 and zlib from the MSYS2 MinGW toolchain (licenses below).
 
+## recomp-ui
+
+The launcher window and online lobby of the recompiled build (`external/recomp-ui`).
+https://github.com/mstan/recomp-ui. MIT License, Copyright (c) 2026 Matthew Stanley; full text
+in `external/recomp-ui/LICENSE`. It bundles, each under its own license:
+
+- Dear ImGui (MIT), stb_image, stb_image_write and stb_truetype (MIT / public domain),
+  tinyfiledialogs (zlib, Copyright (c) 2014-2025 Guillaume Vareille), in `src/third_party/`.
+- Lato (Copyright (c) 2010-2015 Łukasz Dziedzic) and Noto Sans Symbols 2 (Copyright The Noto
+  Project Authors) fonts, and country flags rendered from Noto Color Emoji, under the SIL Open
+  Font License 1.1.
+- OpenMoji emoji font, Copyright OpenMoji Project, under CC BY-SA 4.0.
+
+Details are in `assets/common/fonts/NOTICE.md` and `assets/common/img/NOTICE.md` of recomp-ui,
+copied into the `licenses` folder of each download.
+
+The online lobby connects to the public lobby server `netplay.retcomm.net`, run by the
+recomp-net project. It receives the game name, the build version, a fingerprint of the ROM
+(not the ROM itself) and the player name you choose.
+
 ## SDL 3
 
 Simple DirectMedia Layer, built from source and linked statically. https://libsdl.org

@@ -163,7 +163,8 @@ files, saves, save states, extracted assets, code generated from the ROM, or scr
   Matthew Stanley, used under the PolyForm Noncommercial License 1.0.0, with its components
   [arm-recomp-core](https://github.com/mstan/arm-recomp-core),
   [recomp-net](https://github.com/RetroPortingToolKit/recomp-net) and
-  [rbengine](https://github.com/RetroPortingToolKit/rbengine) (MIT).
+  [rbengine](https://github.com/RetroPortingToolKit/rbengine) (MIT), and its launcher and
+  online lobby [recomp-ui](https://github.com/mstan/recomp-ui) (MIT).
 - [SDL](https://libsdl.org), [ENet](https://github.com/lsalzman/enet), [Dear ImGui](https://github.com/ocornut/imgui),
   [stb](https://github.com/nothings/stb), [rcheevos](https://github.com/RetroAchievements/rcheevos),
   [DM Sans](https://github.com/googlefonts/dm-fonts) and [Lucide](https://lucide.dev).

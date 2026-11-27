@@ -12,6 +12,9 @@
 
 #include "kamo_game.h"
 #include "runtime.h"
+#if defined(RECOMP_LAUNCHER)
+#include "launcher_seam.h"
+#endif
 
 int main(int argc, char** argv) {
     gbarecomp::RunOptions options;
@@ -28,6 +31,13 @@ int main(int argc, char** argv) {
         return 2;
     }
     options.netplay = netplay;
+
+#if defined(RECOMP_LAUNCHER)
+    // The launcher window: pick ROM and BIOS, change settings, or open the online lobby.
+    // It is skipped for command-line netplay and headless runs, and returns non-zero
+    // when the player closes it.
+    if (gbarecomp_launcher_preboot(args, options)) return 0;
+#endif
 
     std::vector<char*> kept;
     kept.reserve(args.size() + 1);
