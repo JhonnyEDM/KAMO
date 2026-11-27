@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=KAMO
+GenericName=Kirby & The Amazing Mirror (native)
+Comment=Play your own copy of Kirby & The Amazing Mirror natively
+Exec=kamo
+Icon=kamo
+StartupWMClass=KAMO
+Terminal=false
+Categories=Game;
