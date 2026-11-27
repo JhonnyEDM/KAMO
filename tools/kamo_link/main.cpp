@@ -9,10 +9,13 @@
 // Saves go to <dir>/unitN.sav, so the user's own saves are never touched.
 // Everything written is derived from the ROM: keep <dir> out of the repository.
 
+#include <algorithm>
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -69,6 +72,9 @@ int main(int argc, char** argv) {
     std::vector<Script> scripts(4);
     std::vector<std::vector<std::uint16_t>> replay;  // per frame, per player (from --replay)
     bool quiet = false;
+    long prof_from = -1, prof_to = -1;
+    std::array<std::map<std::uint32_t, long>, 4> prof_blocked, prof_all;
+    long cur_frame = 0;
     bool expect_link = false;  // exit 1 if the link stops (regression tests)
     for (int i = 1; i < argc; ++i) {
         std::string a = argv[i];
@@ -94,6 +100,13 @@ int main(int argc, char** argv) {
         } else if (a == "--trace-from") trace_from = std::strtol(next().c_str(), nullptr, 10);
         else if (a == "--cpu-pct") cpu_pct = std::atoi(next().c_str());
         else if (a == "--quiet") quiet = true;
+        else if (a == "--profile") {
+            // "<from>-<to>": per console, where the CPU spends slices with IRQs blocked.
+            std::string s = next();
+            prof_from = std::strtol(s.c_str(), nullptr, 10);
+            size_t dash = s.find('-');
+            prof_to = dash == std::string::npos ? prof_from + 60 : std::strtol(s.c_str() + dash + 1, nullptr, 10);
+        }
         else if (a == "--expect-link") expect_link = true;
         else if (a == "--replay") {
             // A KAMO-Netplay recording: header lines, then "frames", then one line per frame.
@@ -148,6 +161,12 @@ int main(int argc, char** argv) {
         ptrs.push_back(consoles.back().get());
     }
     LinkCable cable(ptrs);
+    cable.on_slice = [&](int u, const Gba& g) {
+        if (cur_frame < prof_from || cur_frame >= prof_to) return;
+        const std::uint32_t block = g.debug_pc() & ~0xFFu;
+        ++prof_all[size_t(u)][block];
+        if (g.debug_irq_blocked()) ++prof_blocked[size_t(u)][block];
+    };
     if (cpu_pct > 0)
         for (auto& c : consoles) c->cpu_speed_pct = kamo::gba::u32(cpu_pct);
 
@@ -172,6 +191,7 @@ int main(int argc, char** argv) {
         if (f < long(replay.size()))
             for (int u = 0; u < units && u < int(replay[size_t(f)].size()); ++u)
                 consoles[size_t(u)]->set_keys(replay[size_t(f)][size_t(u)]);
+        cur_frame = f;
         if (f == trace_from)
             for (auto& c : consoles) c->sio_trace = true;
         cable.run_frame();
@@ -195,6 +215,18 @@ int main(int argc, char** argv) {
                             consoles[size_t(u)]->sio_control());
             std::printf("\n");
             last_transfers = cable.transfers();
+        }
+    }
+    if (prof_from >= 0) {
+        for (int u = 0; u < units; ++u) {
+            std::vector<std::pair<long, std::uint32_t>> top;
+            long total = 0, blocked = 0;
+            for (auto& [b, n] : prof_all[size_t(u)]) total += n;
+            for (auto& [b, n] : prof_blocked[size_t(u)]) { top.emplace_back(n, b); blocked += n; }
+            std::sort(top.rbegin(), top.rend());
+            std::printf("unit %d frames %ld-%ld: %ld slices, %ld with IRQs blocked\n", u, prof_from, prof_to, total, blocked);
+            for (size_t k = 0; k < top.size() && k < 8; ++k)
+                std::printf("   %08X..%08X  %ld blocked slices\n", top[k].second, top[k].second + 0xFF, top[k].first);
         }
     }
     dump(frames, true);

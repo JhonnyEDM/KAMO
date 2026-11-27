@@ -31,7 +31,9 @@ void LinkCable::run_frame() {
     while (remaining > 0) {
         for (size_t i = 0; i < units_.size(); ++i) {
             if (done[i]) continue;
-            if (units_[i]->run_slice(kSliceCycles)) {
+            const bool done_now = units_[i]->run_slice(kSliceCycles);
+            if (on_slice) on_slice(int(i), *units_[i]);
+            if (done_now) {
                 done[i] = true;
                 --remaining;
             }

@@ -18,7 +18,8 @@ namespace {
 
 using Clock = std::chrono::steady_clock;
 
-constexpr std::uint16_t kProtocol = 2;
+constexpr std::uint16_t kProtocol = 3;
+constexpr std::size_t kMaxSave = 256 * 1024;
 constexpr std::uint8_t kChannels = 1;
 constexpr auto kMeasureTime = std::chrono::milliseconds(1200);  // ping phase before the start
 constexpr auto kPingInterval = std::chrono::milliseconds(50);
@@ -33,6 +34,7 @@ enum Msg : std::uint8_t {
     kLobby = 7,    // host -> all: players connected so far
     kPing = 8,     // host -> client: id
     kPong = 9,     // client -> host: id
+    kSave = 10,    // any: slot, size, battery save bytes (host relays)
 };
 
 struct Writer {
@@ -41,6 +43,10 @@ struct Writer {
     void u16(std::uint16_t v) { u8(std::uint8_t(v)); u8(std::uint8_t(v >> 8)); }
     void u32(std::uint32_t v) { u16(std::uint16_t(v)); u16(std::uint16_t(v >> 16)); }
     void u64(std::uint64_t v) { u32(std::uint32_t(v)); u32(std::uint32_t(v >> 32)); }
+    void bytes(const std::vector<std::uint8_t>& v) {
+        u32(std::uint32_t(v.size()));
+        b.insert(b.end(), v.begin(), v.end());
+    }
     void str(const std::string& s) {
         std::size_t n = std::min<std::size_t>(s.size(), 255);
         u8(std::uint8_t(n));
@@ -59,6 +65,13 @@ struct Reader {
     std::uint16_t u16() { std::uint16_t lo = u8(); return std::uint16_t(lo | (u8() << 8)); }
     std::uint32_t u32() { std::uint32_t lo = u16(); return lo | (std::uint32_t(u16()) << 16); }
     std::uint64_t u64() { std::uint64_t lo = u32(); return lo | (std::uint64_t(u32()) << 32); }
+    std::vector<std::uint8_t> bytes() {
+        std::size_t len = u32();
+        if (!ok || len > kMaxSave || i + len > n) { ok = false; return {}; }
+        std::vector<std::uint8_t> v(p + i, p + i + len);
+        i += len;
+        return v;
+    }
     std::string str() {
         std::size_t len = u8();
         if (i + len > n) { ok = false; return {}; }
@@ -99,6 +112,9 @@ struct Session::Impl {
     std::array<std::vector<std::int32_t>, kMaxPlayers> inputs;  // -1 = not known yet
     std::map<std::uint32_t, std::array<std::optional<std::uint64_t>, kMaxPlayers>> hashes;
     long long desync = -1;
+    bool started = false;  // START seen: input and saves are accepted
+    std::array<std::optional<std::vector<std::uint8_t>>, kMaxPlayers> saves;
+    std::vector<std::uint8_t> no_save;
 
     // Round trips: host measures each client before the start; a client learns its own in kStart.
     std::array<int, kMaxPlayers> rtt_ms{};
@@ -152,8 +168,28 @@ struct Session::Impl {
         // The first `delay` frames have no input yet: everyone starts with nothing pressed.
         for (int s = 0; s < players; ++s)
             for (int f = 0; f < delay; ++f) inputs[std::size_t(s)][std::size_t(f)] = 0;
-        state = State::Running;
-        message = "Running";
+        started = true;
+        // Send this player's save to everyone; the game boots once all saves are here.
+        Writer w;
+        w.u8(kSave);
+        w.u8(std::uint8_t(slot));
+        w.bytes(cfg.save);
+        if (cfg.host) broadcast_except(w, -1);
+        else send(server, w);
+        got_save(slot, cfg.save);
+    }
+
+    void got_save(int s, std::vector<std::uint8_t> data) {
+        if (s < 0 || s >= kMaxPlayers) return;
+        saves[std::size_t(s)] = std::move(data);
+        int have = 0;
+        for (int i = 0; i < players; ++i) have += saves[std::size_t(i)].has_value() ? 1 : 0;
+        if (have >= players && state != State::Running) {
+            state = State::Running;
+            message = "Running";
+        } else if (state != State::Running) {
+            message = "Exchanging saves: " + std::to_string(have) + "/" + std::to_string(players);
+        }
     }
 
     void broadcast_except(const Writer& w, int except_slot) {
@@ -273,7 +309,19 @@ struct Session::Impl {
             }
             return;
         }
-        if (state != State::Running) return;
+        if (!started) return;
+        if (type == kSave) {
+            r.u8();
+            std::vector<std::uint8_t> data = r.bytes();
+            if (!r.ok) return;
+            Writer w;
+            w.u8(kSave);
+            w.u8(std::uint8_t(from));
+            w.bytes(data);
+            broadcast_except(w, from);
+            got_save(from, std::move(data));
+            return;
+        }
         if (type == kInput) {
             r.u8();  // the sender's slot is taken from the connection, not the message
             std::uint32_t frame = r.u32();
@@ -337,6 +385,12 @@ struct Session::Impl {
                 for (auto& v : rtt_ms) v = rtt;  // everyone is reached through the host
                 connected = n;
                 begin(n, d);
+                break;
+            }
+            case kSave: {
+                int s = r.u8();
+                std::vector<std::uint8_t> data = r.bytes();
+                if (r.ok && started) got_save(s, std::move(data));
                 break;
             }
             case kInput: {
@@ -438,7 +492,7 @@ void Session::poll() {
                     int s = int(reinterpret_cast<std::intptr_t>(ev.peer->data));
                     if (s > 0 && d.peers[std::size_t(s)] == ev.peer) {
                         d.peers[std::size_t(s)] = nullptr;
-                        if (d.state == State::Running) d.fail("Player " + std::to_string(s + 1) + " left the session");
+                        if (d.started) d.fail("Player " + std::to_string(s + 1) + " left the session");
                         else d.host_lobby_update();
                     }
                 } else if (d.state != State::Failed) {
@@ -485,7 +539,7 @@ int Session::ping_ms() const {
 
 void Session::submit_input(std::uint32_t frame, std::uint16_t keys, std::uint32_t my_frame) {
     Impl& d = *d_;
-    if (d.state != State::Running) return;
+    if (!d.started) return;
     d.set_input(d.slot, frame, keys);
     Writer w;
     w.u8(kInput);
@@ -530,7 +584,7 @@ double Session::frames_ahead(std::uint32_t my_frame, double frame_seconds) const
 
 void Session::submit_hash(std::uint32_t frame, std::uint64_t hash) {
     Impl& d = *d_;
-    if (d.state != State::Running) return;
+    if (!d.started) return;
     d.set_hash(d.slot, frame, hash);
     Writer w;
     w.u8(kHash);
@@ -542,5 +596,11 @@ void Session::submit_hash(std::uint32_t frame, std::uint64_t hash) {
 }
 
 long long Session::desync_frame() const { return d_->desync; }
+
+const std::vector<std::uint8_t>& Session::save_of(int slot) const {
+    const Impl& d = *d_;
+    if (slot < 0 || slot >= kMaxPlayers || !d.saves[std::size_t(slot)]) return d.no_save;
+    return *d.saves[std::size_t(slot)];
+}
 
 }  // namespace kamo::net

@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "app/bmp.h"
+#include "app/config.h"
 #include "app/theme.h"
 #include "gba/gba.h"
 #include "gba/link.h"
@@ -220,6 +221,24 @@ struct Match {
 
     bool active() const { return !consoles.empty(); }
 
+    fs::path session_dir, local_save, keep_save;
+    fs::file_time_type last_sync{};
+
+    // Copies this player's save from the session to their own save file when it changed.
+    void sync_save() {
+        if (keep_save.empty()) return;
+        std::error_code ec;
+        if (!fs::exists(local_save, ec)) return;
+        auto t = fs::last_write_time(local_save, ec);
+        if (ec || t == last_sync) return;
+        fs::create_directories(keep_save.parent_path(), ec);
+        fs::path tmp = keep_save;
+        tmp += ".tmp";
+        fs::copy_file(local_save, tmp, fs::copy_options::overwrite_existing, ec);
+        if (!ec) fs::rename(tmp, keep_save, ec);
+        if (!ec) last_sync = t;
+    }
+
     void start_recording(int players, int delay, int slot) {
         char* base = SDL_GetPrefPath("KAMO", "Netplay");
         fs::path dir = (base ? fs::path(base) : fs::temp_directory_path()) / "recordings";
@@ -248,13 +267,25 @@ struct Match {
             << "\nlocal " << slot + 1 << "\nframes\n";
     }
 
-    void boot(const std::vector<std::uint8_t>& rom, int players) {
-        fs::path dir = fs::temp_directory_path() / "kamo-netplay";
+    // Boots every console with the save its player brought. The local player's progress is copied
+    // back to `user_save` while playing and at the end (empty path: not kept).
+    void boot(const std::vector<std::uint8_t>& rom, const net::Session& s, fs::path user_save = {}) {
+        const int players = s.players();
+        session_dir = fs::temp_directory_path() / "kamo-netplay";
+        fs::path& dir = session_dir;
         std::error_code ec;
         fs::remove_all(dir, ec);
         fs::create_directories(dir, ec);
+        local_save = dir / ("p" + std::to_string(s.local_slot() + 1) + ".sav");
+        keep_save = std::move(user_save);
+        last_sync = {};
         std::vector<Gba*> ptrs;
         for (int i = 0; i < players; ++i) {
+            const auto& data = s.save_of(i);
+            if (!data.empty()) {
+                std::ofstream f(dir / ("p" + std::to_string(i + 1) + ".sav"), std::ios::binary);
+                f.write(reinterpret_cast<const char*>(data.data()), std::streamsize(data.size()));
+            }
             consoles.push_back(std::make_unique<Gba>(rom, dir / ("p" + std::to_string(i + 1) + ".sav")));
             consoles.back()->reset();
             ptrs.push_back(consoles.back().get());
@@ -269,6 +300,7 @@ struct Match {
     void end() {
         cable.reset();
         consoles.clear();
+        sync_save();  // the consoles flushed their saves when destroyed
         if (rec.is_open()) rec.close();
     }
 
@@ -312,6 +344,7 @@ struct Match {
                 SDL_PutAudioStreamData(stream, audio.data(), int(audio.size() * sizeof(std::int16_t)));
             audio.clear();
             if (frame % 60 == 0) s.submit_hash(frame, state_hash(consoles));
+            if (frame % 300 == 0) sync_save();
             if (quit_frame > 0 && long(frame) >= quit_frame) return false;
         }
         return true;
@@ -328,6 +361,7 @@ struct Options {
     long quit_frame = 0;
     fs::path rom, dump;
     std::string update_test, pretend_version;
+    fs::path save;
 };
 
 int usage() {
@@ -348,6 +382,10 @@ int run_headless(const Options& opt, const kamo::Rom& rom) {
     cfg.version = KAMO_VERSION;
     cfg.rom_sha1 = rom.sha1;
     cfg.loopback_only = opt.loopback;
+    if (!opt.save.empty()) {
+        std::ifstream in(opt.save, std::ios::binary);
+        cfg.save.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+    }
     net::Session s;
     std::string err;
     if (!s.start(cfg, &err)) {
@@ -363,7 +401,7 @@ int run_headless(const Options& opt, const kamo::Rom& rom) {
         if (s.message() != last && s.state() != net::State::Running) std::printf("%s\n", (last = s.message()).c_str());
         if (s.state() == net::State::Failed) return 1;
         if (s.state() == net::State::Running && !m.active()) {
-            m.boot(rom.data, s.players());
+            m.boot(rom.data, s);
             std::printf("session started: player %d of %d, input delay %d\n", s.local_slot() + 1, s.players(), s.delay());
             tick = SDL_GetPerformanceCounter();
         }
@@ -415,6 +453,7 @@ int main(int argc, char** argv) {
         else if (a == "--frames") opt.quit_frame = std::strtol(next().c_str(), nullptr, 10);
         else if (a == "--input") opt.script = next();
         else if (a == "--dump-frame") opt.dump = next();
+        else if (a == "--save") opt.save = next();  // headless: battery save to bring
         else if (a == "--update-test") opt.update_test = next();  // "check" or "install" (testing)
         else if (a == "--pretend-version") opt.pretend_version = next();
         else return usage();
@@ -520,9 +559,42 @@ int main(int argc, char** argv) {
     bool overlay = true;
     double started_at = 0;
 
+    // The same battery save KAMO.exe uses, so progress carries over between single player and online.
+    kamo::Config kamo_config;
+    auto user_save_path = [&]() -> fs::path {
+        return rom ? kamo_config.pref_dir() / "saves" / (rom->sha1 + ".sav") : fs::path();
+    };
+    // Copy of the save before each online session (10 newest kept), in case anything goes wrong.
+    auto backup_save = [&](const fs::path& save) {
+        std::error_code ec;
+        if (!fs::exists(save, ec)) return;
+        fs::path dir = save.parent_path() / "backups";
+        fs::create_directories(dir, ec);
+        std::vector<fs::path> old;
+        for (auto& e : fs::directory_iterator(dir, ec))
+            if (e.path().filename().string().rfind("netplay-", 0) == 0) old.push_back(e.path());
+        std::sort(old.begin(), old.end());
+        while (old.size() >= 10) {
+            fs::remove(old.front(), ec);
+            old.erase(old.begin());
+        }
+        SDL_Time now = 0;
+        SDL_DateTime t{};
+        SDL_GetCurrentTime(&now);
+        SDL_TimeToDateTime(now, &t, true);
+        char name[64];
+        std::snprintf(name, sizeof name, "netplay-%04d%02d%02d-%02d%02d%02d.sav", t.year, t.month, t.day, t.hour, t.minute, t.second);
+        fs::copy_file(save, dir / name, fs::copy_options::overwrite_existing, ec);
+    };
+
     auto start_session = [&](bool host) {
         if (!rom) return;
         net::Config cfg;
+        if (fs::path save = user_save_path(); !save.empty()) {
+            backup_save(save);
+            std::ifstream in(save, std::ios::binary);
+            cfg.save.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
+        }
         cfg.host = host;
         cfg.address = address;
         cfg.port = opt.port;
@@ -588,7 +660,7 @@ int main(int argc, char** argv) {
             if (session.state() == net::State::Failed) leave_session(session.message());
             else if (session.state() == net::State::Running) {
                 if (!match.active()) {
-                    match.boot(rom->data, session.players());
+                    match.boot(rom->data, session, user_save_path());
                     match.start_recording(session.players(), session.delay(), session.local_slot());
                     started_at = ImGui::GetTime();
                     dt = 0;
@@ -651,6 +723,14 @@ int main(int argc, char** argv) {
             if (!settings.rom.empty()) {
                 ImGui::TextWrapped("%s", fs::path(settings.rom).filename().string().c_str());
                 if (rom) ImGui::TextColored(c.good, KAMO_ICON_CHECK " %s", rom_status.c_str());
+                if (rom) {
+                    ImGui::PushFont(kamo::theme::font_small());
+                    std::error_code ec;
+                    ImGui::TextColored(c.ink_muted, fs::exists(user_save_path(), ec)
+                                                        ? "Your progress is saved to the same file as KAMO.exe."
+                                                        : "No save yet: your progress will be saved for KAMO and KAMO.exe.");
+                    ImGui::PopFont();
+                }
                 else if (!rom_status.empty()) ImGui::TextColored(c.bad, "%s", rom_status.c_str());
             } else {
                 ImGui::TextColored(c.ink_muted, "Kirby & The Amazing Mirror (USA). It is never copied or sent.");

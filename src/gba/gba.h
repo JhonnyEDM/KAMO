@@ -74,6 +74,10 @@ public:
     // Called by LinkCable; nullptr detaches. id 0 is the parent.
     void attach_link(class LinkCable* cable, int id);
     bool linked() const { return link_ != nullptr; }
+    // Debug (profiling tools): address of the next instruction, and whether IRQs are blocked
+    // (CPSR I flag set, or IME off).
+    u32 debug_pc() const { return pc_; }
+    bool debug_irq_blocked() const { return (cpsr_ & 0x80) || !(io_[0x208] & 1); }
     int link_id() const { return link_id_; }
     // True when the game put the serial port in multiplayer mode (RCNT bit 15 = 0, SIOCNT
     // bits 12-13 = 2).

@@ -13,6 +13,7 @@
 // of each other. Everything is deterministic: same inputs, same result.
 
 #include <array>
+#include <functional>
 #include <vector>
 
 #include "gba/gba.h"
@@ -36,6 +37,8 @@ public:
 
     // Runs every console until each has completed one frame.
     void run_frame();
+    // Debug: called after every slice with the console index (profiling tools).
+    std::function<void(int, const Gba&)> on_slice;
 
     int size() const { return int(units_.size()); }
     // Completed transfers since creation (diagnostics).

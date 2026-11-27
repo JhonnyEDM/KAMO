@@ -11,6 +11,9 @@
 // With an automatic delay the host measures the round trip to every player for about a second
 // once everyone has joined, then picks the smallest delay that covers it.
 //
+// When the game starts every player sends their battery save to the others (through the host), and
+// the session is Running once all saves have arrived.
+//
 // Every input message also carries the sender's current frame, so each PC can tell whether it
 // runs ahead of the others (frames_ahead) and slow down slightly instead of stalling.
 // No SDL dependency.
@@ -18,6 +21,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace kamo::net {
 
@@ -35,6 +39,7 @@ struct Config {
     std::string rom_sha1;           // must match on every PC
     std::string name;               // shown to the others
     bool loopback_only = false;     // host: listen on 127.0.0.1 only (local tests)
+    std::vector<std::uint8_t> save; // this player's battery save (empty: none), sent to everyone
 };
 
 enum class State { Idle, Connecting, Waiting, Running, Failed, Ended };
@@ -71,6 +76,10 @@ public:
     // How many frames this PC runs ahead of the slowest other player (negative: behind),
     // estimated from their last reported frame, the time since and half the round trip.
     double frames_ahead(std::uint32_t my_frame, double frame_seconds) const;
+
+    // Battery save each player brought (empty if none). Valid once state() is Running: every PC
+    // boots console i with save_of(i), so all copies of the session start identical.
+    const std::vector<std::uint8_t>& save_of(int slot) const;
 
     // State hash of all consoles after `frame`; compared with the other players' hashes.
     void submit_hash(std::uint32_t frame, std::uint64_t hash);
