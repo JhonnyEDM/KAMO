@@ -23,7 +23,9 @@
 - [x] Input exchange over UDP (ENet), lockstep with input delay
 - [x] Direct connection by IP address (`KAMO-Netplay` test build)
 - [x] Version and ROM check on join; desync detection by state hashes
-- [ ] Automatic input delay from ping
+- [x] Automatic input delay from the measured ping
+- [x] Frame pacing: a PC that runs ahead slows down slightly instead of stalling
+- [x] In-window menu to host or join, and self-update from GitHub releases
 - [ ] Session start with each player's own save
 - [ ] Resynchronisation after a desync
 - [ ] Lobby service: public and private sessions, codes, ready / start / kick

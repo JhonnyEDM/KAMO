@@ -5,6 +5,8 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
+#include <cmath>
 #include <cstring>
 #include <map>
 #include <optional>
@@ -14,17 +16,23 @@ namespace kamo::net {
 
 namespace {
 
-constexpr std::uint16_t kProtocol = 1;
+using Clock = std::chrono::steady_clock;
+
+constexpr std::uint16_t kProtocol = 2;
 constexpr std::uint8_t kChannels = 1;
+constexpr auto kMeasureTime = std::chrono::milliseconds(1200);  // ping phase before the start
+constexpr auto kPingInterval = std::chrono::milliseconds(50);
 
 enum Msg : std::uint8_t {
     kHello = 1,    // client -> host: protocol, version, rom sha1, name
     kReject = 2,   // host -> client: reason
     kWelcome = 3,  // host -> client: slot, players expected
-    kStart = 4,    // host -> all: players, delay
-    kInput = 5,    // any: slot, frame, keys (host relays)
+    kStart = 4,    // host -> client: players, delay, this client's round trip (ms)
+    kInput = 5,    // any: slot, frame, keys, sender's current frame (host relays)
     kHash = 6,     // any: slot, frame, hash (host relays)
     kLobby = 7,    // host -> all: players connected so far
+    kPing = 8,     // host -> client: id
+    kPong = 9,     // client -> host: id
 };
 
 struct Writer {
@@ -70,6 +78,13 @@ int g_enet_users = 0;
 
 }  // namespace
 
+int delay_for_rtt(int rtt_ms) {
+    // Input travels one way (half the round trip); add ~10 ms for jitter and frame alignment.
+    const double frame_ms = 1000.0 / 59.7275;
+    int d = int(std::ceil((std::max(rtt_ms, 0) * 0.5 + 10.0) / frame_ms));
+    return std::clamp(d, 1, kMaxDelay);
+}
+
 struct Session::Impl {
     Config cfg;
     State state = State::Idle;
@@ -85,6 +100,18 @@ struct Session::Impl {
     std::map<std::uint32_t, std::array<std::optional<std::uint64_t>, kMaxPlayers>> hashes;
     long long desync = -1;
 
+    // Round trips: host measures each client before the start; a client learns its own in kStart.
+    std::array<int, kMaxPlayers> rtt_ms{};
+    bool measuring = false;
+    Clock::time_point measure_end, next_ping;
+    std::uint32_t ping_id = 0;
+    std::map<std::uint32_t, Clock::time_point> ping_sent;
+    std::array<std::vector<int>, kMaxPlayers> samples;
+
+    // Last frame each player reported and when it arrived (for frames_ahead).
+    std::array<std::optional<std::uint32_t>, kMaxPlayers> their_frame;
+    std::array<Clock::time_point, kMaxPlayers> their_frame_at{};
+
     void fail(const std::string& why) {
         state = State::Failed;
         message = why;
@@ -95,6 +122,15 @@ struct Session::Impl {
         auto& v = inputs[std::size_t(s)];
         if (v.size() <= frame) v.resize(std::size_t(frame) + 1024, -1);
         v[frame] = keys;
+    }
+
+    void note_frame(int s, std::uint32_t sender_frame) {
+        if (s < 0 || s >= kMaxPlayers) return;
+        auto& f = their_frame[std::size_t(s)];
+        if (!f || sender_frame >= *f) {
+            f = sender_frame;
+            their_frame_at[std::size_t(s)] = Clock::now();
+        }
     }
 
     void set_hash(int s, std::uint32_t frame, std::uint64_t h) {
@@ -125,6 +161,20 @@ struct Session::Impl {
             if (s != except_slot && peers[std::size_t(s)]) send(peers[std::size_t(s)], w);
     }
 
+    // Host: everyone is here and the delay is known.
+    void host_start(int d) {
+        measuring = false;
+        for (int s = 1; s < players; ++s) {
+            Writer w;
+            w.u8(kStart);
+            w.u8(std::uint8_t(players));
+            w.u8(std::uint8_t(d));
+            w.u16(std::uint16_t(std::clamp(rtt_ms[std::size_t(s)], 0, 65535)));
+            send(peers[std::size_t(s)], w);
+        }
+        begin(players, d);
+    }
+
     void host_lobby_update() {
         connected = 1;
         for (int s = 1; s < kMaxPlayers; ++s)
@@ -133,16 +183,48 @@ struct Session::Impl {
         w.u8(kLobby);
         w.u8(std::uint8_t(connected));
         broadcast_except(w, -1);
-        if (state == State::Waiting && connected >= players) {
-            Writer s;
-            s.u8(kStart);
-            s.u8(std::uint8_t(players));
-            s.u8(std::uint8_t(delay));
-            broadcast_except(s, -1);
-            begin(players, delay);
-        } else if (state == State::Waiting) {
+        if (state != State::Waiting) return;
+        if (connected >= players) {
+            if (cfg.delay > 0) {
+                host_start(std::clamp(cfg.delay, 1, kMaxDelay));
+            } else {
+                measuring = true;
+                measure_end = Clock::now() + kMeasureTime;
+                next_ping = Clock::now();
+                for (auto& s : samples) s.clear();
+                message = "Everyone is here. Measuring the connection...";
+            }
+        } else {
+            measuring = false;
             message = "Waiting for players: " + std::to_string(connected) + "/" + std::to_string(players);
         }
+    }
+
+    void host_measure() {
+        if (!measuring) return;
+        const auto now = Clock::now();
+        if (now >= next_ping) {
+            next_ping = now + kPingInterval;
+            Writer w;
+            w.u8(kPing);
+            w.u32(++ping_id);
+            ping_sent[ping_id] = now;
+            broadcast_except(w, -1);
+        }
+        if (now < measure_end) return;
+        int worst = 0;
+        for (int s = 1; s < players; ++s) {
+            auto v = samples[std::size_t(s)];
+            int rtt = 150;  // no samples: assume a slow connection
+            if (!v.empty()) {
+                std::sort(v.begin(), v.end());
+                rtt = v[v.size() / 2];  // median
+            }
+            rtt_ms[std::size_t(s)] = rtt;
+            worst = std::max(worst, rtt);
+        }
+        ping_sent.clear();
+        host_start(delay_for_rtt(worst));
     }
 
     void host_receive(ENetPeer* peer, Reader& r) {
@@ -157,7 +239,7 @@ struct Session::Impl {
                 reason = "Different KAMO version (host has " + cfg.version + ", you have " + version + ")";
             else if (sha1 != cfg.rom_sha1)
                 reason = "Different ROM: everyone needs Kirby & The Amazing Mirror (USA)";
-            else if (state != State::Waiting)
+            else if (state != State::Waiting || measuring)
                 reason = "The session has already started";
             int free_slot = -1;
             for (int s = 1; s < players && free_slot < 0; ++s)
@@ -181,18 +263,31 @@ struct Session::Impl {
             host_lobby_update();
             return;
         }
-        if (from <= 0 || state != State::Running) return;
+        if (from <= 0) return;
+        if (type == kPong) {
+            std::uint32_t id = r.u32();
+            auto it = ping_sent.find(id);
+            if (r.ok && it != ping_sent.end()) {
+                auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - it->second).count();
+                samples[std::size_t(from)].push_back(int(ms));
+            }
+            return;
+        }
+        if (state != State::Running) return;
         if (type == kInput) {
             r.u8();  // the sender's slot is taken from the connection, not the message
             std::uint32_t frame = r.u32();
             std::uint16_t keys = r.u16();
+            std::uint32_t sender_frame = r.u32();
             if (!r.ok) return;
             set_input(from, frame, keys);
+            note_frame(from, sender_frame);
             Writer w;
             w.u8(kInput);
             w.u8(std::uint8_t(from));
             w.u32(frame);
             w.u16(keys);
+            w.u32(sender_frame);
             broadcast_except(w, from);
         } else if (type == kHash) {
             r.u8();
@@ -222,19 +317,36 @@ struct Session::Impl {
             case kLobby:
                 connected = r.u8();
                 if (state == State::Waiting)
-                    message = "Joined as player " + std::to_string(slot + 1) + ", players: " +
+                    message = "Joined as player " + std::to_string(slot + 1) + ". Players: " +
                               std::to_string(connected) + "/" + std::to_string(players);
                 break;
+            case kPing: {
+                std::uint32_t id = r.u32();
+                if (!r.ok) break;
+                Writer w;
+                w.u8(kPong);
+                w.u32(id);
+                send(server, w);
+                if (state == State::Waiting) message = "Everyone is here. Measuring the connection...";
+                break;
+            }
             case kStart: {
                 int n = r.u8(), d = r.u8();
-                if (r.ok) begin(n, d);
+                int rtt = r.u16();
+                if (!r.ok) break;
+                for (auto& v : rtt_ms) v = rtt;  // everyone is reached through the host
+                connected = n;
+                begin(n, d);
                 break;
             }
             case kInput: {
                 int s = r.u8();
                 std::uint32_t frame = r.u32();
                 std::uint16_t keys = r.u16();
-                if (r.ok) set_input(s, frame, keys);
+                std::uint32_t sender_frame = r.u32();
+                if (!r.ok) break;
+                set_input(s, frame, keys);
+                note_frame(s, sender_frame);
                 break;
             }
             case kHash: {
@@ -254,48 +366,42 @@ Session::~Session() { stop(); }
 
 bool Session::start(const Config& cfg, std::string* error) {
     stop();
-    if (g_enet_users++ == 0 && enet_initialize() != 0) {
-        --g_enet_users;
+    if (g_enet_users == 0 && enet_initialize() != 0) {
         if (error) *error = "Could not initialise networking";
         return false;
     }
+    ++g_enet_users;
     Impl& d = *d_;
     d = Impl{};
     d.cfg = cfg;
+    auto fail_start = [&](const std::string& why) {
+        if (error) *error = why;
+        if (d.host) enet_host_destroy(d.host);
+        d.host = nullptr;
+        if (--g_enet_users == 0) enet_deinitialize();
+        return false;
+    };
     if (cfg.host) {
         d.players = std::clamp(cfg.players, 2, kMaxPlayers);
-        d.delay = std::clamp(cfg.delay, 1, 10);
         ENetAddress addr{};
         addr.host = ENET_HOST_ANY;
         if (cfg.loopback_only) enet_address_set_host(&addr, "127.0.0.1");
         addr.port = cfg.port;
         d.host = enet_host_create(&addr, kMaxPlayers - 1, kChannels, 0, 0);
-        if (!d.host) {
-            if (error) *error = "Could not open port " + std::to_string(cfg.port) + " (already in use?)";
-            return false;
-        }
+        if (!d.host) return fail_start("Could not open port " + std::to_string(cfg.port) + " (already in use?)");
         d.slot = 0;
         d.state = State::Waiting;
         d.host_lobby_update();
     } else {
         d.host = enet_host_create(nullptr, 1, kChannels, 0, 0);
-        if (!d.host) {
-            if (error) *error = "Could not create a network socket";
-            return false;
-        }
+        if (!d.host) return fail_start("Could not create a network socket");
         ENetAddress addr{};
-        if (enet_address_set_host(&addr, cfg.address.c_str()) != 0) {
-            if (error) *error = "Unknown host: " + cfg.address;
-            return false;
-        }
+        if (enet_address_set_host(&addr, cfg.address.c_str()) != 0) return fail_start("Unknown host: " + cfg.address);
         addr.port = cfg.port;
         d.server = enet_host_connect(d.host, &addr, kChannels, 0);
-        if (!d.server) {
-            if (error) *error = "Could not start the connection";
-            return false;
-        }
+        if (!d.server) return fail_start("Could not start the connection");
         d.state = State::Connecting;
-        d.message = "Connecting to " + cfg.address + ":" + std::to_string(cfg.port) + "...";
+        d.message = "Connecting to " + cfg.address + "...";
     }
     return true;
 }
@@ -315,7 +421,7 @@ void Session::poll() {
                     w.str(d.cfg.rom_sha1);
                     w.str(d.cfg.name);
                     send(d.server, w);
-                    d.message = "Connected, checking version and ROM...";
+                    d.message = "Connected. Checking version and ROM...";
                 } else {
                     ev.peer->data = nullptr;
                 }
@@ -342,6 +448,7 @@ void Session::poll() {
             default: break;
         }
     }
+    if (d.cfg.host) d.host_measure();
     enet_host_flush(d.host);
 }
 
@@ -376,7 +483,7 @@ int Session::ping_ms() const {
     return worst;
 }
 
-void Session::submit_input(std::uint32_t frame, std::uint16_t keys) {
+void Session::submit_input(std::uint32_t frame, std::uint16_t keys, std::uint32_t my_frame) {
     Impl& d = *d_;
     if (d.state != State::Running) return;
     d.set_input(d.slot, frame, keys);
@@ -385,6 +492,7 @@ void Session::submit_input(std::uint32_t frame, std::uint16_t keys) {
     w.u8(std::uint8_t(d.slot));
     w.u32(frame);
     w.u16(keys);
+    w.u32(my_frame);
     if (d.cfg.host) d.broadcast_except(w, -1);
     else send(d.server, w);
 }
@@ -401,6 +509,23 @@ bool Session::ready(std::uint32_t frame) const {
 std::uint16_t Session::input(int slot, std::uint32_t frame) const {
     const auto& v = d_->inputs[std::size_t(std::clamp(slot, 0, kMaxPlayers - 1))];
     return v.size() > frame && v[frame] >= 0 ? std::uint16_t(v[frame]) : 0;
+}
+
+double Session::frames_ahead(std::uint32_t my_frame, double frame_seconds) const {
+    const Impl& d = *d_;
+    const auto now = Clock::now();
+    double ahead = 0;
+    bool any = false;
+    for (int s = 0; s < d.players; ++s) {
+        if (s == d.slot || !d.their_frame[std::size_t(s)]) continue;
+        double since = std::chrono::duration<double>(now - d.their_frame_at[std::size_t(s)]).count();
+        double one_way = d.rtt_ms[std::size_t(s)] * 0.0005;
+        double theirs = double(*d.their_frame[std::size_t(s)]) + (since + one_way) / frame_seconds;
+        double a = double(my_frame) - theirs;
+        ahead = any ? std::max(ahead, a) : a;
+        any = true;
+    }
+    return any ? ahead : 0;
 }
 
 void Session::submit_hash(std::uint32_t frame, std::uint64_t hash) {

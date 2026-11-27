@@ -60,17 +60,18 @@ How it works is described in [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md).
 
 ### Trying it now
 
-The test build includes `KAMO-Netplay`, a small program for online co-op by direct connection:
+Download `KAMO-Netplay.exe` from the [latest release](https://github.com/JhonnyEDM/KAMO/releases) (Windows):
 
-1. Everyone needs the same KAMO version and their own ROM.
-2. One player runs `KAMO-Netplay`, picks their ROM and chooses **host**. The others choose
-   **join** and type the host's IP address.
-3. The game starts when everyone is in. Each player sees their own Kirby; then pick
-   **Start Game > Multi Player** on every console and player 1 confirms.
+1. Open it and click **Choose ROM...** to pick your own dump.
+2. One player clicks **Host** and shares one of the addresses shown (click to copy). The others
+   type that address and click **Join**.
+3. When everyone is in, the game boots. On every console choose **Start Game > Multi Player**;
+   player 1 confirms.
 
-The host must be reachable on UDP port 7845: forward it on the router, or use a virtual LAN
-(Tailscale, ZeroTier, Radmin VPN). Sessions currently start from a fresh game; using your own
-save comes next.
+The input delay is picked automatically from the ping, and KAMO-Netplay updates itself when a new
+version is released. The host must be reachable on UDP port 7845: forward it on the router, or
+use a virtual LAN such as Radmin VPN, ZeroTier or Tailscale. Sessions currently start from a
+fresh game; using your own save comes next.
 
 ## Getting started
 
