@@ -14,6 +14,7 @@ if ($LASTEXITCODE -ne 0) { Get-Content "$BuildDir\configure.log" -Tail 20; exit 
 
 $p = Start-Process cmake -ArgumentList "--build $BuildDir --target KAMO KAMOViewProbe -j $Jobs" `
     -NoNewWindow -PassThru -RedirectStandardOutput "$BuildDir\build.log" -RedirectStandardError "$BuildDir\build.err"
+$null = $p.Handle   # keep the handle so ExitCode is available after exit
 $minSeen = [double]::MaxValue
 while (-not $p.HasExited) {
     $free = (Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1MB

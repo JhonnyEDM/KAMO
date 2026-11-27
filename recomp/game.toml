@@ -3042,3 +3042,3056 @@ note = "IWRAM copy of 0x08158F14; multiplayer dispatch miss"
 addr = 0x030068E0
 mode = "arm"
 note = "IWRAM copy of 0x08158F54"
+
+# Thumb functions reached through pointers stored in ROM data structures (a 0x08xxxxx1 word whose
+# target the automatic walk missed and that decodes as Thumb code up to a return or branch).
+
+[[extra_func]]
+addr = 0x08000006
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08000008
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800000E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800002C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800004A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800004C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800004E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08000050
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08000052
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08000054
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08000056
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08000058
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080000BA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080000F6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080000FA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080000FE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08000106
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08000410
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08000434
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08000452
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08000710
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08000788
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080009F2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08001320
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800183E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08003010
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800337A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08003402
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08003416
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08005336
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800645E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08006952
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080083FE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800BB76
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800D8CA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800DC54
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800DC58
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800EDF8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800EDFC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800EEFE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800F616
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0800F618
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08010006
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08010408
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0801B05E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0801E62C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0801F9F2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0801FBFA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0801FBFC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0801FDF2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0801FEF2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0801FEF6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0801FEF8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080200BA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08020506
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08025320
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08025434
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08025440
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08025640
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0802B0CC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0802B438
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0802CC44
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0802EAEA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0802F0E8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0802F1F4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0802FCB4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0802FCDC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0802FCE8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0802FCF6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0802FCF8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0802FCFA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0802FDF2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08030022
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08030056
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080300FC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080302DC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08030408
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08033712
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0803ECDE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0803F30A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0803F316
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0803F8F8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0803F8FA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08040206
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08040208
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08040500
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08040502
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08040506
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08040508
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08040926
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08040B00
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08041C36
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0804F200
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0804FBE4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0804FBF0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080501FC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080501FE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08050200
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08050202
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08050204
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08050206
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080505F8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080505FA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08050602
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08050810
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0805F200
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08060EFA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0806F6F6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0806FFFC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0806FFFE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080700FA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080700FC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080701FC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08070200
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08070204
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08070208
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08070308
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0807030A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08070402
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080704FE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08070500
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08070502
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08070804
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08070806
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08070C0A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0807100E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0807EF00
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08080808
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0808080A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0808080C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0808080E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08080810
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080808FE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08080B0C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08080B0E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08081720
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08085F10
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080902FA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08090304
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08090306
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0809030A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08090754
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08091108
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08091222
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08094808
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0809DBEE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0809F964
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0809F9F6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0809FBE6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080A04FC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080A04FE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080A06FC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080A0700
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080A0704
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080A08EC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080A08F8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080A08FE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080A0906
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080A0908
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080A1C1E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080AD7F2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080AF200
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080B0932
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080B0B08
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080B0B0A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080B103A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080B1214
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080B2A2C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080BE3F6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080BFDDE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080C0208
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080C04F6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080C1816
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080C2236
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080CF300
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080CF8EC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080D060A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080D0CFE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080D0E12
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080D0E14
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080D6688
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080EEFFA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080EF000
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080F0C10
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080F3E2C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x080FFEEE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08106602
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081077B6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0810A510
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0810FB50
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081106E0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08110804
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0811080E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08110F0E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08111110
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08111118
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08111812
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08111F30
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08119CD0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08119CE0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0811BA10
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0811C214
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0811C758
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0811F0CC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0811FC3C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08120148
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08120594
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08121480
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08121940
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081224B8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0812F808
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08130CF4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08130CF8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08130CFC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08131306
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08131410
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0813FE06
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081402F4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081402FA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08140426
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08140A0A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081411FC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081425FC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08149A50
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0814FA10
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0814FA24
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08151C12
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081524A6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081528C8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081528D4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081528E4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081528F4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08152904
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08152914
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08152920
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0815292C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08152944
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08152954
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08158268
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08158850
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08159752
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0816F000
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0816F200
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081704FE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08171006
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08180022
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081800BC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08182210
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08182224
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08183F50
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0818F300
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08192A38
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08192B1E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081BEEFA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081E0EE6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081E0F16
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081E2204
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081E2B14
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081E2C34
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081E2E24
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081E444C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081EF200
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081EF7E6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081F907E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x081F909C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0820F200
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0820FF02
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08210612
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0821323A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08213B46
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08221210
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08222024
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08222664
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0822F200
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08233E12
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08260024
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x082608C2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08260D00
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08262F2A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08262FFE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0826FADE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08270502
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08280298
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08280826
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x082A3B36
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x082BC100
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x082C04E2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x082C0C32
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x082C2B2E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x082CFF02
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x082E3C0E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08322250
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0832F002
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0832F700
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x083323A0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08333772
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08339798
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08345510
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0834C5AE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0834C5B6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08352010
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0835F200
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x083600BA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08367854
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08384D3C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08395D34
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x083A0036
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x083B0CCC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x083B1046
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x083B2200
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x083B51FC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08545586
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08554664
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x085554BA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0855675E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08564532
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08565374
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x085FF500
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08611110
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08668998
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08698902
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0869F300
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0869F500
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x086F6F64
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x086FFBEA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x087F40B8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x087F6D7E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0880C9E2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0883007A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x088300A8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08830D80
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08834382
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08872222
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08940B14
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0895486E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0897067E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0897391A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08995576
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08999886
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0899BEEC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x0899D502
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x089A9AA8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x089ABCA8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x089B00DA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x089B1066
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x089BBCCA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x089BBCCC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x089C3332
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x089E114A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08A00B30
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08A0BCBC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08A315B0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08A525EC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08A6BBBC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08A74D06
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08A7569A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08AA7776
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08ABC6BA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08ABCCC6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08AC9770
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08B89998
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08BABC2A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08BAFB02
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08BB5502
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08BB5774
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08BB9576
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08BB9AB8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08BBBAC8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08BBC840
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08BC284E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08BCFFFE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08BF1F10
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08C00C88
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08C05CEE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08C07334
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08C2E10E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08C44554
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08C60198
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08C7204A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08C97800
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08CB63A8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08CD3F26
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D41640
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D41744
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D41D60
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D41F2C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D42044
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4237E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D42532
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D426C2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D428F4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D42964
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D42CDC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D42E48
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D42E4A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D431FC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D43250
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D435E4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D435FC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4367E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4373E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D43CD8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D43ECA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D442F4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D442F8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D45172
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D45278
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D45806
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4589A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D45B20
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D45B3E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D45B70
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D45BCC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D45C2C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D45C36
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D45C8E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D45D8A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D45DD6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4666E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D46828
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D46D18
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D474D6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4781C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D47B42
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D47BEC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D47DE8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D47EAA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D47F22
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D47F60
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D47F7E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D48044
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D480A2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D480DA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D487FC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D48928
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D48C20
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D49916
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D49924
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D49E2C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4A194
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4A22C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4A38C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4A63E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4AC46
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4ACC0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4AEFE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4B4EC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4BA12
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4BB8C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4BDE0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4BF2E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4C0C6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4C5A4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4C71E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4C88C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4CBCC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4CCC2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4CF46
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4D1A8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4D38C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4D41A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4D93A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4D96C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4D9CA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4DA1A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4DA90
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4DBEC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4DD66
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4DDBE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4E17A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4E230
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4E3A2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4E3B4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4EA60
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4F098
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4F320
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4FA94
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4FCBE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4FCC6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D4FCFA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5011A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5057E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D50600
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D50664
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D50808
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D50848
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D50AAA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5102E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D511D0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D514DC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D516A8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D516B0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D51CB0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D51EB8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D51FF0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D52C66
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D52D74
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5372E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D537A6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D53870
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D53AC2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D53AEA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5421E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D54380
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D548B6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D548C4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D54E02
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D551A4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5538C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D553A2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D553D0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D554BC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D554D2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D55660
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D55AEE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D55B14
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D55BE8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D55BFE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D55C2C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D55EDC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D56EE8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D56EFE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D575CE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5760C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D578EA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D57984
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D58060
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D581FA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D590CA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D591BA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D595B8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D595CA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D597A0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D59EF4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5A1A2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5A3DE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5A880
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5AC78
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5AC8A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5AD22
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5AD48
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5B254
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5B964
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5BDD0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5C608
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5CD3A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5DD04
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5DD58
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5DE44
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5DE7A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5DF24
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5DFAA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5DFBE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5E026
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5E034
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5E0EA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5E25E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5E3EE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5E444
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5E45E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5E476
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5E6E8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5E710
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5E834
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5E934
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5EA46
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5EBB4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5EBD6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5EE32
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5EE52
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5EE6E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5F3B6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5F4AE
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5F556
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5F596
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5F6C2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5F7E8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5F950
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5FA02
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5FA28
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5FA92
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D5FD60
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D72B1A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D77776
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D79014
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D7D8E6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D99DB2
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D9BB82
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D9C9CA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D9CEC6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D9D30E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D9E91E
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08D9F91A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08DA00F4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08DA0824
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08DACBC4
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08E1FD2A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08E2020A
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08E2021C
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08E208E0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08E20CFA
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08E5C6B0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08E5CFC0
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08E5D2C6
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08E5ECEC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08E61104
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08E7DB70
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08E7E6E8
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08E7E7FC
+mode = "thumb"
+note = "data pointer target"
+
+[[extra_func]]
+addr = 0x08E808F6
+mode = "thumb"
+note = "data pointer target"
