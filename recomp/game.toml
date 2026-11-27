@@ -3014,3 +3014,31 @@ note = "pointer table target"
 addr = 0x08E81118
 mode = "thumb"
 note = "pointer table target"
+
+
+# ARM code the game copies from ROM into IWRAM at boot (found in a saved state: the RAM bytes
+# match the ROM source exactly). The runtime entry points run from RAM.
+
+[[code_copy]]
+runtime_start = 0x03006C50
+source_start  = 0x08158F14
+size          = 0x40
+name          = "iwram_routine_6C50"
+note          = "reached in link sessions; register block copy with IME masked"
+
+[[code_copy]]
+runtime_start = 0x030068E0
+source_start  = 0x08158F54
+size          = 0x180
+name          = "iwram_routine_68E0"
+note          = "interrupt-time routine; 0x180 bytes verified against RAM"
+
+[[extra_func]]
+addr = 0x03006C50
+mode = "arm"
+note = "IWRAM copy of 0x08158F14; multiplayer dispatch miss"
+
+[[extra_func]]
+addr = 0x030068E0
+mode = "arm"
+note = "IWRAM copy of 0x08158F54"
