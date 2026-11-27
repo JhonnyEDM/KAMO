@@ -22,23 +22,28 @@ if(NOT EXISTS "${KAMO_BIOS_DIR}/bios_recompiled.cpp")
     message(FATAL_ERROR "No recompiled BIOS in ${KAMO_BIOS_DIR}. See recomp/README.md.")
 endif()
 
-# Small KAMO changes to GBARecomp, kept as patches in recomp/patches and applied to the
-# submodule checkout once (a patch that already applies in reverse is skipped).
+# Small KAMO changes to the submodules, kept as patches in recomp/patches
+# (gbarecomp-*.patch, recomp-ui-*.patch) and applied to each checkout once. A patch that
+# already applies in reverse is skipped.
 find_package(Git REQUIRED)
-file(GLOB KAMO_GBARECOMP_PATCHES "${CMAKE_CURRENT_SOURCE_DIR}/patches/gbarecomp-*.patch")
-list(SORT KAMO_GBARECOMP_PATCHES)
-foreach(kamo_patch IN LISTS KAMO_GBARECOMP_PATCHES)
-    execute_process(COMMAND "${GIT_EXECUTABLE}" apply --reverse --check "${kamo_patch}"
-        WORKING_DIRECTORY "${KAMO_GBARECOMP_DIR}" RESULT_VARIABLE kamo_applied OUTPUT_QUIET ERROR_QUIET)
-    if(NOT kamo_applied EQUAL 0)
-        execute_process(COMMAND "${GIT_EXECUTABLE}" apply "${kamo_patch}"
-            WORKING_DIRECTORY "${KAMO_GBARECOMP_DIR}" RESULT_VARIABLE kamo_failed)
-        if(NOT kamo_failed EQUAL 0)
-            message(FATAL_ERROR "Cannot apply ${kamo_patch} to ${KAMO_GBARECOMP_DIR}")
+function(kamo_apply_patches prefix checkout)
+    file(GLOB patches "${CMAKE_CURRENT_SOURCE_DIR}/patches/${prefix}-*.patch")
+    list(SORT patches)
+    foreach(patch IN LISTS patches)
+        execute_process(COMMAND "${GIT_EXECUTABLE}" apply --reverse --check "${patch}"
+            WORKING_DIRECTORY "${checkout}" RESULT_VARIABLE applied OUTPUT_QUIET ERROR_QUIET)
+        if(NOT applied EQUAL 0)
+            execute_process(COMMAND "${GIT_EXECUTABLE}" apply "${patch}"
+                WORKING_DIRECTORY "${checkout}" RESULT_VARIABLE failed)
+            if(NOT failed EQUAL 0)
+                message(FATAL_ERROR "Cannot apply ${patch} to ${checkout}")
+            endif()
+            message(STATUS "KAMO: applied ${patch}")
         endif()
-        message(STATUS "KAMO: applied ${kamo_patch}")
-    endif()
-endforeach()
+    endforeach()
+endfunction()
+kamo_apply_patches(gbarecomp "${KAMO_GBARECOMP_DIR}")
+kamo_apply_patches(recomp-ui "${KAMO_RECOMP_UI_DIR}")
 
 set(GBARECOMP_GENERATED_BIOS_DIR "${KAMO_BIOS_DIR}" CACHE PATH "" FORCE)
 set(GBARECOMP_NETPLAY ON CACHE BOOL "" FORCE)

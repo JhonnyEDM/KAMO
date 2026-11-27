@@ -66,6 +66,10 @@ See the [roadmap](docs/ROADMAP.md) for details.
 4. To go on later, every player starts **`Continue online match.cmd`** (or
    `KAMO.exe --continue-online`) and you meet in a room as before.
 
+**Input lag.** The host sets the input delay for everyone, chosen from the ping when the match
+starts. With a low ping, open **Settings** in the room, turn on **Manual Input Delay** and try 2
+or 3 frames; raise it if the game stutters.
+
 Everyone needs the same KAMO version and the same ROM. Online progress is kept in the shared match,
 not in each player's single-player save, and a match saved with one KAMO version can only be
 continued with that version.
