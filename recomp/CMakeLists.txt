@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.20)
 # KAMO needs no BIOS: the runtime boots the cartridge directly and services BIOS calls
 # natively. KAMO_WITH_BIOS=ON links a recompiled retail BIOS instead (development only):
 #   KAMO_BIOS_DIR        output of `gba_recompile --bios <bios> --config bios/gba_bios.toml`
-project(KAMORecomp VERSION 0.4.1 LANGUAGES C CXX)
+project(KAMORecomp VERSION 0.4.2 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
