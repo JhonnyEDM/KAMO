@@ -20,6 +20,7 @@ Copy-Item "$build\KAMO.exe", "$build\SDL2.dll", "$build\libgcc_s_seh-1.dll", "$b
 Copy-Item "$build\assets\fonts\LatoLatin-Bold.ttf", "$build\assets\fonts\LatoLatin-Regular.ttf" "$pkg\assets\fonts"
 Copy-Item assets/logo/kamo-logo.png "$pkg\assets\kamo\logo.png"
 Copy-Item assets/icon/kamo-icon.png "$pkg\assets\kamo\icon.png"
+Copy-Item -Recurse assets/menu "$pkg\assets\kamo\menu"
 Copy-Item recomp/package/README.txt $pkg
 Copy-Item recomp/package/recomplauncher.json $pkg
 
