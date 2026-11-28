@@ -7,7 +7,7 @@ index 36ecd24..6dd968d 100644
              (closing || (match.checkpoint_pending() && !boot.finish_tick)) ?
                  std::string("Saving and leaving - close again to discard") :
 -            "Link cable - Player "+std::to_string(launch.seat_machine[launch.local_seat]+1)+" - Shift+F1 save and leave";
-+            "Link cable - Player "+std::to_string(launch.seat_machine[launch.local_seat]+1);
++            "Online - Player "+std::to_string(launch.seat_machine[launch.local_seat]+1);
          const auto title=boot.title+" - "+status;
          if (title!=previous_title) { window.set_title(title.c_str()); previous_title=title; }
          if (match.take_output(output)) {

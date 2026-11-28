@@ -1,24 +1,22 @@
-KAMO - Kirby & The Amazing Mirror, recompiled for PC, with online co-op for up to four players.
-https://github.com/JhonnyEDM/KAMO
+KAMO = Kirby & The Amazing Mirror + Online
+A native PC version of the game with online co-op for up to four players.
+https://github.com/OmegaElMegadivo/KAMO
 
-You need:
-- Your own dump of Kirby & The Amazing Mirror (USA), SHA-1 274b102b6d940f46861a92b4e65f89a51815c12c
-- Your own Game Boy Advance BIOS dump (gba_bios.bin)
-Neither is included.
+You need your own dump of Kirby & The Amazing Mirror (USA) (.gba,
+SHA-1 274b102b6d940f46861a92b4e65f89a51815c12c). It is not included. No BIOS is needed.
 
-Play:
-1. Keep this folder together and run KAMO.exe.
-2. Pick your ROM with "Browse For ROM".
-3. Open Settings and choose your BIOS file. Play stays disabled until ROM and BIOS are set.
-4. Press Play.
+Play
+- With the installer: it asks for your ROM once, then opens KAMO.
+- With the zip: run KAMO.exe and choose your ROM the first time.
+- Play alone, or Play online: sign in with Discord the first time, then create a room
+  (public, or private with a password) or join one from the list. Everyone presses "I'm ready" and the host starts the match.
+- Close the game window to save an online match. To go on later, everyone ticks
+  "Continue the last saved match" in the room before the host starts.
+- Options: window size, full screen, volume, keyboard keys, online input delay.
 
-Online:
-- Press Netplay. Online rooms (public, or private with a password) hold up to four players and
-  go through a public lobby server. LAN / Direct IP rooms hold two players.
-- Everyone needs this same KAMO version and the same ROM.
-- Close the game window to save. The match is saved for every player in the "netplay" folder.
-- To continue it later, every player opens "Continue online match.cmd" and you meet in a room
-  as before. A match can only be continued with the KAMO version that saved it.
+Updates
+- KAMO checks for a new version when it opens and offers to update itself (installed copies).
+  Everyone in an online room needs the same version.
 
 KAMO is an unofficial fan project, not affiliated with Nintendo or HAL Laboratory.
 This build includes GBARecomp (PolyForm Noncommercial License 1.0.0): it may only be used and

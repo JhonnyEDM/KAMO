@@ -16,9 +16,13 @@ Static recompilation on GBARecomp, C++20, CMake, MSYS2 MinGW. Start with `README
 ## How KAMO is built
 
 - The game is a static recompilation on GBARecomp (submodule `external/gbarecomp`, PolyForm
-  Noncommercial); the launcher and lobby are recomp-ui (`external/recomp-ui`, MIT). KAMO's own
+  Noncommercial); the lobby backend and in-game menu are recomp-ui (`external/recomp-ui`, MIT). KAMO's own
   code is `recomp/` (host, `game.toml`, patches, package files) and `tools/`.
-- Generated game and BIOS code lives in the git-ignored `generated/`; see `recomp/README.md`.
+- Generated game code lives in the git-ignored `generated/`; see `recomp/README.md`. KAMO links no
+  BIOS: consoles boot straight into the cartridge and BIOS calls are serviced natively
+  (patch `gbarecomp-0002-native-bios.patch`), in single player and netplay.
+- KAMO's own menu (ROM setup, Play alone / online, Options, updates) is `recomp/src/kamo_*.cpp`,
+  drawn with recomp-ui's Dear ImGui; online rooms use recomp-ui's lobby backend.
 - KAMO's changes to GBARecomp are patches in `recomp/patches/`, applied at CMake configure time.
   Never commit inside the submodule.
 - Netplay is GBARecomp's whole-session netplay: every peer runs all linked consoles, only input
@@ -29,8 +33,8 @@ Static recompilation on GBARecomp, C++20, CMake, MSYS2 MinGW. Start with `README
 
 ## Workflow
 
-- Build: `tools/kamo_build.ps1`. Test: `tools/kamo_test.ps1` (ROM and BIOS paths in
-  `local/rom.ini` and `local/bios.ini`); every test must pass before committing.
+- Build: `tools/kamo_build.ps1`. Test: `tools/kamo_test.ps1` (ROM path in `local/rom.ini`);
+  every test must pass before committing. Package: `tools/kamo_package.ps1` (Inno Setup 6).
 - Multiplayer changes: also check a real two-window match when possible.
 - Keep `docs/ROADMAP.md` up to date.
 - `CLAUDE.local.md` (git-ignored) holds personal preferences of whoever is working locally.

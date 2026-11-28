@@ -1,6 +1,7 @@
 // KAMO game host: runs the statically recompiled Kirby & The Amazing Mirror (USA) on the
 // GBARecomp runtime. The generated cartridge code is linked in at build time; the player
-// supplies the ROM and a retail GBA BIOS at launch (neither is distributed).
+// supplies the ROM (not distributed). No BIOS is needed: the runtime boots the cartridge
+// directly and services the BIOS calls itself.
 //
 // Online play uses GBARecomp's whole-session netplay: every peer runs all linked consoles
 // and only input crosses the network (delay-sync or rollback). Up to four players.
@@ -8,51 +9,44 @@
 #include <cstdio>
 #include <exception>
 #include <filesystem>
-#include <system_error>
 #include <string>
 #include <vector>
 
+#include "kamo_frontend.h"
 #include "kamo_game.h"
+#include "kamo_settings.h"
 #include "player_config.h"
 #include "runtime.h"
-#if defined(RECOMP_LAUNCHER)
-#include "launcher_seam.h"
-#endif
 
 namespace {
 
-// The newest paired archive the netplay runner wrote to <player dir>/netplay/.
-std::filesystem::path newest_online_save(const std::filesystem::path& player_dir) {
-    std::filesystem::path newest;
-    std::filesystem::file_time_type newest_time{};
-    std::error_code ec;
-    for (const auto& entry : std::filesystem::directory_iterator(player_dir / "netplay", ec)) {
-        if (!entry.is_regular_file(ec) || entry.path().extension() != ".paired") continue;
-        const auto time = entry.last_write_time(ec);
-        if (!ec && (newest.empty() || time > newest_time)) {
-            newest = entry.path();
-            newest_time = time;
-        }
+// Command-line runs (tests, tools, explicit ROM) skip the menu.
+bool wants_menu(const std::vector<std::string>& args) {
+    for (std::size_t i = 1; i < args.size(); ++i) {
+        const auto& a = args[i];
+        if (a == "--no-menu" || a == "--rom" || a == "--frames" || a == "--steps" || a == "--no-window" ||
+            a == "--tcp" || a == "--load-state" || a == "--help" || a == "-h" || a.rfind("--dump", 0) == 0)
+            return false;
     }
-    return newest;
+    return true;
 }
 
 }  // namespace
 
 int main(int argc, char** argv) {
     gbarecomp::RunOptions options;
-    options.builtin_game_name = kamo::kGameName;
+    options.builtin_game_name = "KAMO";
     options.builtin_rom_sha1 = kamo::kRomSha1;
     options.launcher_region = "USA";
+    const auto dir = gbarecomp::player_config_directory(options, argv[0]);
 
     auto netplay = kamo::make_netplay_launch();
     std::vector<std::string> args(argv, argv + argc);
-    // --continue-online: resume the newest saved online match. Every player in the match
-    // starts KAMO this way, then the lobby (or direct IP) works as usual.
+    // --continue-online: resume the newest saved online match (command-line netplay).
     for (auto it = args.begin() + 1; it != args.end(); ++it) {
         if (*it != "--continue-online") continue;
         args.erase(it);
-        const auto saved = newest_online_save(gbarecomp::player_config_directory(options, argv[0]));
+        const auto saved = kamo::newest_online_save(dir);
         if (saved.empty()) {
             std::fprintf(stderr, "KAMO: no saved online match in netplay/; starting a new one\n");
         } else {
@@ -62,6 +56,8 @@ int main(int argc, char** argv) {
         }
         break;
     }
+    const bool menu = wants_menu(args);
+    std::erase(args, std::string("--no-menu"));
     try {
         gbarecomp::parse_gba_netplay_arguments(args, *netplay);
     } catch (const std::exception& e) {
@@ -70,11 +66,16 @@ int main(int argc, char** argv) {
     }
     options.netplay = netplay;
 
-#if defined(RECOMP_LAUNCHER)
-    // The launcher window: pick ROM and BIOS, change settings, or open the online lobby.
-    // It is skipped for command-line netplay and headless runs, and returns non-zero
-    // when the player closes it.
-    if (gbarecomp_launcher_preboot(args, options)) return 0;
+    if (menu && !netplay->enabled && !kamo::run_frontend(args, options, dir)) return 0;
+
+#if !defined(GBARECOMP_HAVE_BIOS_RECOMP)
+    // No BIOS code is linked: always boot without a BIOS image, even if one is named.
+    for (std::size_t i = 1; i < args.size();) {
+        if (args[i] == "--bios" && i + 1 < args.size()) args.erase(args.begin() + i, args.begin() + i + 2);
+        else ++i;
+    }
+    args.push_back("--bios");
+    args.emplace_back();
 #endif
 
     std::vector<char*> kept;

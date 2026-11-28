@@ -46,19 +46,22 @@ default 6). Both modes work at every size.
 
 ### Starting and saving a match
 
-The ROM never travels over the network. Each player uses their own; the match checks the ROM,
-the BIOS and the KAMO build of every player before the first frame and refuses mismatches.
+The ROM never travels over the network. Each player uses their own; the match checks the ROM and
+the KAMO build of every player before the first frame and refuses mismatches. No BIOS is used:
+every console boots straight into the cartridge and its BIOS calls are serviced natively, the
+same way on every PC.
 
 Closing the game window asks every player to save together. The PCs agree on one frame and each
 writes the same **paired archive** (`netplay/session-<ID>.paired`) holding every console. A new
-match is resumed from that archive with `--continue-online` (newest archive) or
-`--netplay-resume <file>`; every player must resume the same match with the same KAMO version.
+match is resumed from that archive when every player ticks **Continue the last saved match** in
+the room (or with `--continue-online` / `--netplay-resume <file>`); every player must resume the
+same match with the same KAMO version.
 Online progress is not written to the players' single-player saves.
 
 ## Rooms
 
-The launcher's **Netplay** screen (recomp-ui) connects to the public lobby server
-`netplay.retcomm.net`:
+KAMO's **Play online** screen connects, through recomp-ui's lobby backend, to the public lobby
+server `netplay.retcomm.net`:
 
 | | Public | Private |
 |---|---|---|
@@ -66,7 +69,7 @@ The launcher's **Netplay** screen (recomp-ui) connects to the public lobby serve
 | Password | — | ✅ |
 | Players | 2–4 | 2–4 |
 
-The lobby only lists rooms of the same game build. During the match, input is relayed through the
-server's UDP relay, so no port forwarding is needed. **LAN / Direct IP** rooms connect the PCs
-directly and currently hold two players; the command line supports up to four (see
+Rooms of another KAMO version are shown but cannot be joined. During the match, input is relayed
+through the server's UDP relay, so no port forwarding is needed. Direct IP play without the
+server is available from the command line for up to four players (see
 [`recomp/README.md`](../recomp/README.md)).

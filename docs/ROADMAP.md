@@ -5,9 +5,10 @@ runtime used up to 0.1.x was retired in 0.2.x.
 
 ## 1. The game on PC
 
-- [x] Game and BIOS recompiled to C++ from the player's own files; nothing generated is committed
+- [x] Game recompiled to C++ from the player's own ROM; nothing generated is committed
+- [x] No BIOS needed: BIOS calls serviced natively, in single player and online
 - [x] Cold boot to gameplay through recompiled code
-- [x] Launcher window (recomp-ui): ROM and BIOS check, settings, controls
+- [x] KAMO's own menu: ROM setup, Play alone / online, options, keyboard keys
 - [x] The three multiplayer sub-games with four consoles (test `subgames`)
 - [ ] Coverage of the whole game, including bosses
 - [ ] Full single-player playthrough without issues
@@ -20,13 +21,13 @@ runtime used up to 0.1.x was retired in 0.2.x.
 - [x] Two players between real PCs over the internet
 - [x] Shared match saves, and continuing the newest one (`--continue-online`)
 - [ ] Four players between real PCs
-- [ ] Continue a match from the launcher, without a separate shortcut
+- [x] Continue a match from the room
 - [ ] Write online progress back to each player's single-player save
 - [ ] LAN / direct-IP rooms with more than two seats
 
 ## 3. Release
 
-- [x] Windows build (zip on GitHub Releases)
-- [ ] Automatic updates
+- [x] Windows build: installer and zip on GitHub Releases
+- [x] Automatic updates (installed copies)
 - [ ] macOS and Linux builds
 - [ ] 1.0
