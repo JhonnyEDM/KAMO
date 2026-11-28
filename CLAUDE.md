@@ -37,4 +37,7 @@ Static recompilation on GBARecomp, C++20, CMake, MSYS2 MinGW. Start with `README
   every test must pass before committing. Package: `tools/kamo_package.ps1` (Inno Setup 6).
 - Multiplayer changes: also check a real two-window match when possible.
 - Keep `docs/ROADMAP.md` up to date.
+- Open issues with their investigation are in `.claude/issues/` (read before touching that area).
+  Online rooms of 3–4 players: test locally with `.claude/issues/three-player-online/test3p.ps1`
+  before releasing any netplay change.
 - `CLAUDE.local.md` (git-ignored) holds personal preferences of whoever is working locally.

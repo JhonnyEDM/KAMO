@@ -629,6 +629,11 @@ void lobby_error(Front& f) {
         text = T("Contraseña incorrecta.", "Wrong password.");
     else if (!std::strcmp(e, "lobby_full") || !std::strcmp(e, "full"))
         text = T("La sala está llena.", "The room is full.");
+    else if (!std::strcmp(e, "ice_not_connected") || !std::strcmp(e, "host_relay_unproven")) {
+        text = T("Un jugador no pudo conectarse con el anfitrión. Espera unos segundos y pulsa "
+                 "Empezar partida otra vez.",
+                 "A player could not connect to the host. Wait a few seconds and press Start match again.");
+    }
     else text += e;
     note(f, text, true);
     if (f.np->clear_last_error) f.np->clear_last_error(f.np->ctx);
