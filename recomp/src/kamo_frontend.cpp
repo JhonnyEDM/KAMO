@@ -20,6 +20,7 @@
 #include "imgui_impl_sdl2.h"
 #include "tinyfiledialogs.h"
 
+#include "recomp_net/lobby_client.h"
 #include "recomp_launcher.h"
 #include "launcher_netplay_seam.h"
 
@@ -388,6 +389,15 @@ bool ensure_lobby(Front& f) {
     return f.np != nullptr;
 }
 
+// Send the match through the KAMO lobby server's UDP relay instead of through the host's PC.
+// GBARecomp starts that route for any room size; the host-over-ICE route needs every guest to
+// reach the host directly, which strict routers block (error ice_not_connected).
+void use_server_relay(Front& f) {
+    rnet_lobby_set_relay_via_ice(0);
+    rnet_lobby_set_relay_host_pref(0);
+    if (f.np->force_input_relay_set) f.np->force_input_relay_set(f.np->ctx, 1);
+}
+
 void lobby_error(Front& f) {
     if (!f.np->last_error) return;
     const char* e = f.np->last_error(f.np->ctx);
@@ -397,6 +407,20 @@ void lobby_error(Front& f) {
         text = T("Contraseña incorrecta.", "Wrong password.");
     else if (!std::strcmp(e, "lobby_full") || !std::strcmp(e, "full"))
         text = T("La sala está llena.", "The room is full.");
+    else if (!std::strcmp(e, "ice_not_connected") || !std::strcmp(e, "host_relay_unproven")) {
+        if (f.np->is_host(f.np->ctx)) {
+            use_server_relay(f);
+            text = T("Un jugador no pudo conectarse directo contigo. La partida irá por el servidor de KAMO: "
+                     "pulsa Empezar partida otra vez.",
+                     "A player could not connect to you directly. The match will go through the KAMO server: "
+                     "press Start match again.");
+        } else {
+            text = T("No se pudo conectar directo con el anfitrión. El anfitrión puede volver a empezar "
+                     "y la partida irá por el servidor.",
+                     "Could not connect to the host directly. The host can start again and the match "
+                     "will go through the server.");
+        }
+    }
     else text += e;
     note(f, text, true);
     if (f.np->clear_last_error) f.np->clear_last_error(f.np->ctx);
@@ -702,6 +726,7 @@ void screen_room(Front& f) {
         if (button(T("Empezar partida", "Start match"), 260, can_start)) {
             const int delay = f.settings.input_delay > 0 ? f.settings.input_delay : delay_from_ping(slowest);
             if (np->input_delay_set) np->input_delay_set(np->ctx, delay);
+            if (count > 2) use_server_relay(f);
             RecompLauncherCSettings settings{};
             if (np->request_start(np->ctx, &settings) != 0)
                 note(f, T("No se pudo empezar. ¿Están todos listos?", "Could not start. Is everyone ready?"), true);
