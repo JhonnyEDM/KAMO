@@ -47,6 +47,8 @@ function(kamo_apply_patches prefix checkout)
 endfunction()
 kamo_apply_patches(gbarecomp "${KAMO_GBARECOMP_DIR}")
 kamo_apply_patches(recomp-ui "${KAMO_RECOMP_UI_DIR}")
+# recomp-net is a submodule of GBARecomp; its patches go to that nested checkout.
+kamo_apply_patches(recomp-net "${KAMO_GBARECOMP_DIR}/external/recomp-net")
 
 if(KAMO_WITH_BIOS)
     set(GBARECOMP_GENERATED_BIOS_DIR "${KAMO_BIOS_DIR}" CACHE PATH "" FORCE)
@@ -134,10 +136,12 @@ foreach(kamo_target KAMO KAMOViewProbe)
     endforeach()
 endforeach()
 
-# The menu's logo and window icon, next to the executable.
+# The menu's logo, pixel art and window icon, next to the executable.
 add_custom_command(TARGET KAMO POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_FILE_DIR:KAMO>/assets/kamo"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${KAMO_ROOT}/assets/logo/kamo-logo.png"
             "$<TARGET_FILE_DIR:KAMO>/assets/kamo/logo.png"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${KAMO_ROOT}/assets/icon/kamo-icon.png"
-            "$<TARGET_FILE_DIR:KAMO>/assets/kamo/icon.png")
+            "$<TARGET_FILE_DIR:KAMO>/assets/kamo/icon.png"
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${KAMO_ROOT}/assets/menu"
+            "$<TARGET_FILE_DIR:KAMO>/assets/kamo/menu")
