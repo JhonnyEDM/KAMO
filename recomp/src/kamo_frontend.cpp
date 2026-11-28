@@ -251,6 +251,8 @@ struct Front {
     bool room_private = false;
     int room_players = 4;
     std::string joining_id;
+    Uint32 waiting_since = 0;   // when the Room screen began waiting for the server
+    bool create_sent = false;   // a create is on its way: the room exists before in_lobby says so
     bool continue_saved = false;
     std::string room_title;
 };
@@ -347,8 +349,12 @@ void draw_update_bar(Front& f) {
     ImGui::PopStyleColor();
 }
 
+// Also leaves a room whose create the server has not answered yet: the leave reaches the
+// server after the create, so the room is closed instead of staying listed with no host.
 void leave_room(Front& f) {
-    if (f.np && f.np->in_lobby && f.np->in_lobby(f.np->ctx) && f.np->leave) f.np->leave(f.np->ctx);
+    if (!f.np || !f.np->leave) return;
+    if (f.create_sent || (f.np->in_lobby && f.np->in_lobby(f.np->ctx))) f.np->leave(f.np->ctx);
+    f.create_sent = false;
 }
 
 void screen_menu(Front& f) {
@@ -372,12 +378,15 @@ void screen_menu(Front& f) {
     draw_update_bar(f);
 }
 
+bool g_lobby_opened = false;
+
 bool ensure_lobby(Front& f) {
     if (f.np) return true;
     try {
         RecompLauncherCGameInfo gi{};
         gbarecomp_seam::configure_netplay(gi, *f.options, f.dir.string());
         f.np = recomp_netplay_host_callbacks();
+        g_lobby_opened = f.np != nullptr;
         f.lobby_version = f.options->netplay->build_identity.substr(0, 31);
     } catch (const std::exception& e) {
         std::fprintf(stderr, "KAMO: online unavailable: %s\n", e.what());
@@ -599,6 +608,7 @@ void screen_create(Front& f) {
             note(f, T("No se pudo crear la sala. Inténtalo otra vez.", "Could not create the room. Try again."), true);
         } else {
             f.room_title = f.room_name;
+            f.create_sent = true;
             f.message.clear();
             f.screen = Screen::Room;
         }
@@ -613,10 +623,10 @@ void screen_room(Front& f) {
     lobby_error(f);
     if (!np->in_lobby(np->ctx)) {
         // Joining takes a moment; a room that closed sends the player back to the list.
-        static Uint32 waiting_since = 0;
-        if (!waiting_since) waiting_since = SDL_GetTicks();
-        if (SDL_GetTicks() - waiting_since > 8000) {
-            waiting_since = 0;
+        if (!f.waiting_since) f.waiting_since = SDL_GetTicks();
+        if (SDL_GetTicks() - f.waiting_since > 8000) {
+            f.waiting_since = 0;
+            leave_room(f);
             note(f, T("Saliste de la sala.", "You left the room."), true);
             f.screen = Screen::Online;
             return;
@@ -625,6 +635,8 @@ void screen_room(Front& f) {
         centered_text(T("Entrando...", "Joining..."), kSoftInk);
         return;
     }
+    f.create_sent = false;
+    f.waiting_since = 0;
     if (np->launch_pending(np->ctx)) {
         RecompLauncherCNetplayLaunch launch{};
         if (np->fill_launch(np->ctx, &launch) && launch.enabled) {
@@ -938,6 +950,12 @@ bool run_frontend(std::vector<std::string>& args, gbarecomp::RunOptions& options
     args.push_back(std::to_string(f.settings.volume));
     if (f.settings.fullscreen) args.push_back("--fullscreen=1");
     return true;
+}
+
+void close_online() {
+    if (!g_lobby_opened) return;
+    g_lobby_opened = false;
+    recomp_netplay_host_disconnect();
 }
 
 }  // namespace kamo

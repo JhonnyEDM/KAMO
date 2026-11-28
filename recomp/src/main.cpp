@@ -110,6 +110,9 @@ int main(int argc, char** argv) {
     for (auto& a : args) kept.push_back(a.data());
     kept.push_back(nullptr);
     const int result = gbarecomp::run_game(int(args.size()), kept.data(), options);
+    // An online match from the menu is over: close its room on the lobby server. Without this
+    // the room stayed listed until KAMO quit, since this process outlives the match (below).
+    kamo::close_online();
     if (!menu) return result;
     // Leaving the game returns to KAMO's menu. The menu runs in a fresh process (the game
     // runtime is not built to start twice in one process); this first process waits, so a

@@ -15,4 +15,8 @@ namespace kamo {
 bool run_frontend(std::vector<std::string>& args, gbarecomp::RunOptions& options,
                   const std::filesystem::path& dir);
 
+// Leaves the online room and closes the lobby connection opened by the menu, if any. Called
+// when an online match ends: the room must not stay listed while KAMO keeps running.
+void close_online();
+
 }  // namespace kamo
