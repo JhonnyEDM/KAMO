@@ -1,6 +1,9 @@
 # Issue: online rooms of 3 or 4 players never start
 
-**Status:** open. Two-player online rooms work. Rooms of three or four fail every time.
+**Status:** fix in testing (see `ANALYSIS.md`). Rooms of three now launch over the host relay
+(`recomp/patches/recomp-net-0001-host-relay-without-ice.patch`) and play on one PC; a match
+across networks needs the host's UDP port to be reachable and is still to be checked by real
+players. Before the fix: two-player online rooms work; rooms of three or four fail every time.
 **Affects:** 0.3.0, 0.3.1 and 0.3.2. The 0.3.2 fix did not work: it was released without a
 three-player test.
 **Rule from the maintainer:** test three players locally (below) before releasing any fix.
@@ -56,7 +59,7 @@ guest: rnet_lobby: launch refused - this client is not connected to the host ove
   (`recomp/patches/recomp-net-*.patch`) and a `kamo_apply_patches` call for that checkout.
 - The 0.3.2 server-relay forcing was removed from `recomp/src/kamo_frontend.cpp`; only a clearer
   Spanish/English message for `ice_not_connected` is left.
-- 0.3.2 is released; the next fix is 0.3.3.
+- 0.3.2 is released; the fix ships in 0.4.0.
 
 ## Options for the real fix
 

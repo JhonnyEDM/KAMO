@@ -39,7 +39,7 @@ reproduced by the GBARecomp runtime.
 |---|---|
 | Single player | ✅ Playable |
 | Online co-op, 2 players (public and private rooms) | ✅ Tested between two PCs |
-| Online co-op, 3–4 players | 🧪 Testing |
+| Online co-op, 3–4 players | 🧪 Testing: the host's UDP port must be reachable (UPnP or forwarded) |
 | Continue an online match | ✅ |
 | Installer and automatic updates | ✅ |
 | Coverage of every level, boss and sub-game in multiplayer | 🔨 In progress |
@@ -74,9 +74,17 @@ the installer's size and SHA-256 against the release, and updates itself. It als
 3. Close the game window to save. To go on later, everyone ticks **Continue the last saved match**
    in the room before the host starts.
 
-**Input lag.** The host's input delay is chosen from the slowest ping in the room. If you want
-less lag on a good connection, set it in **Options > Online** (2 or 3 frames); raise it if the
-game stutters.
+In the room, players can **chat**, the host wears a **crown**, and a **Connection** line says
+whether the host's port is open and which players reach it.
+
+**Input lag.** With **Automatic** (the default) the match starts from the room's pings and then
+adjusts the delay by itself while you play. A number in **Options > Online** fixes it instead:
+lower responds sooner, higher stutters less. Press **F** while playing online to see the
+connection (lag, delay, margin, rollback).
+
+**When something fails**, KAMO says what happened and what to do, with an error code, and keeps a
+log of the room and the match in `netplay\online.log` next to `KAMO.exe` (send it with a bug
+report).
 
 Everyone needs the same KAMO version and the same ROM. Online progress is kept in the shared match,
 not in each player's single-player save, and a match saved with one KAMO version can only be
