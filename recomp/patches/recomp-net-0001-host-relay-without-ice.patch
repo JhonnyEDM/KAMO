@@ -1,0 +1,56 @@
+diff --git a/src/lobby/rnet_lobby_client.c b/src/lobby/rnet_lobby_client.c
+index 23be3da..31a747b 100644
+--- a/src/lobby/rnet_lobby_client.c
++++ b/src/lobby/rnet_lobby_client.c
+@@ -1411,10 +1411,27 @@ static RNetHostIce *g_host_ice;
+ void rnet_lobby_set_relay_via_ice(int on) { g_relay_via_ice_pref = on ? 1 : 0; }
+ int  rnet_lobby_relay_via_ice(void) { return g_relay_via_ice_pref; }
+ 
+-/* The room's published caps ask for ICE as the host relay's path. */
++/* The room's published caps ask for ICE as the host relay's path.
++ *
++ * KAMO: only a build that can run ICE takes that path. The server names
++ * "ice" for rooms of three or more even when the host published plain
++ * "relay":"host"; a build without ICE never connects waiting-room agents, so
++ * standing the UDP host relay down here left nothing to carry the match. It
++ * keeps the UDP host relay (mapped port + guest probes) instead, the route
++ * two-seat rooms already take. */
+ static int room_relays_via_ice(void)
+ {
+-    return g_lc.match_caps.valid && g_lc.match_caps.relay_via_ice;
++    static int told;
++    if (!(g_lc.match_caps.valid && g_lc.match_caps.relay_via_ice))
++        return 0;
++    if (rnet_host_ice_available())
++        return 1;
++    if (!told) {
++        told = 1;
++        fprintf(stderr, "rnet_lobby: room asks for the host relay over ICE; "
++                        "this build has no ICE, keeping the UDP host relay\n");
++    }
++    return 0;
+ }
+ 
+ /* The waiting-room agents handed over at launch, until the engine takes them
+@@ -2960,6 +2977,21 @@ static void handle_server_json(const char *json)
+         }
+         g_lc.join.transport_ice_hub =
+             (g_lc.join.transport_host && g_lc.match_caps.relay_via_ice) ? 1 : 0;
++        /* KAMO: see room_relays_via_ice(). Without ICE the match takes the
++         * host relay over the advertised UDP port: the host hubs, the guests
++         * dial host_endpoint, as in two-seat rooms. */
++        if (g_lc.join.transport_ice_hub && !rnet_host_ice_available()) {
++            g_lc.join.transport_ice_hub = 0;
++            g_lc.match_caps.relay_via_ice = 0;
++            fprintf(stderr, "rnet_lobby: launch asks for ICE; this build has no "
++                            "ICE, using the UDP host relay\n");
++        }
++        fprintf(stderr, "rnet_lobby: launch transport=%s players=%d host=%d "
++                        "ice=%d relay_endpoint=%d host_endpoint=%s\n",
++                transport[0] ? transport : "-", g_lc.join.player_count,
++                g_lc.is_host ? 1 : 0, g_lc.join.transport_ice_hub,
++                relay_endpoint[0] ? 1 : 0,
++                g_lc.join.host_endpoint[0] ? "set" : "empty");
+         if (relay_endpoint[0] && endpoint_has_usable_port(relay_endpoint)) {
+             strncpy(g_lc.join.host_endpoint, relay_endpoint,
+                     sizeof(g_lc.join.host_endpoint) - 1);

@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.20)
 # KAMO needs no BIOS: the runtime boots the cartridge directly and services BIOS calls
 # natively. KAMO_WITH_BIOS=ON links a recompiled retail BIOS instead (development only):
 #   KAMO_BIOS_DIR        output of `gba_recompile --bios <bios> --config bios/gba_bios.toml`
-project(KAMORecomp VERSION 0.3.2 LANGUAGES C CXX)
+project(KAMORecomp VERSION 0.4.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -47,6 +47,8 @@ function(kamo_apply_patches prefix checkout)
 endfunction()
 kamo_apply_patches(gbarecomp "${KAMO_GBARECOMP_DIR}")
 kamo_apply_patches(recomp-ui "${KAMO_RECOMP_UI_DIR}")
+# recomp-net is a submodule of GBARecomp; its patches go to that nested checkout.
+kamo_apply_patches(recomp-net "${KAMO_GBARECOMP_DIR}/external/recomp-net")
 
 if(KAMO_WITH_BIOS)
     set(GBARECOMP_GENERATED_BIOS_DIR "${KAMO_BIOS_DIR}" CACHE PATH "" FORCE)
@@ -85,7 +87,7 @@ target_include_directories(KAMO PRIVATE
     "${KAMO_RECOMP_UI_DIR}/src/third_party/imgui"
     "${KAMO_RECOMP_UI_DIR}/src/third_party/imgui/backends")
 if(WIN32)
-    target_link_libraries(KAMO PRIVATE winhttp ws2_32 opengl32)
+    target_link_libraries(KAMO PRIVATE winhttp bcrypt ws2_32 opengl32)
 endif()
 target_include_directories(KAMO PRIVATE ${KAMO_INCLUDES})
 target_link_gbarecomp_runtime_stack(KAMO kamo_generated gbarecomp_netplay)
@@ -134,10 +136,12 @@ foreach(kamo_target KAMO KAMOViewProbe)
     endforeach()
 endforeach()
 
-# The menu's logo and window icon, next to the executable.
+# The menu's logo, pixel art and window icon, next to the executable.
 add_custom_command(TARGET KAMO POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_FILE_DIR:KAMO>/assets/kamo"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${KAMO_ROOT}/assets/logo/kamo-logo.png"
             "$<TARGET_FILE_DIR:KAMO>/assets/kamo/logo.png"
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${KAMO_ROOT}/assets/icon/kamo-icon.png"
-            "$<TARGET_FILE_DIR:KAMO>/assets/kamo/icon.png")
+            "$<TARGET_FILE_DIR:KAMO>/assets/kamo/icon.png"
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory "${KAMO_ROOT}/assets/menu"
+            "$<TARGET_FILE_DIR:KAMO>/assets/kamo/menu")

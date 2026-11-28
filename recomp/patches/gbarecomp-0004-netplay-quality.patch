@@ -1,0 +1,219 @@
+diff --git a/src/runtime/host_window.h b/src/runtime/host_window.h
+index af33add..84f0c18 100644
+--- a/src/runtime/host_window.h
++++ b/src/runtime/host_window.h
+@@ -160,6 +160,9 @@ public:
+ 
+     void set_fps_readout(bool on);      // presents-per-second in the title bar
+     bool fps_readout() const;
++    // Online: one line under the FPS readout about the connection, after a dot coloured by
++    // quality (0 good, 1 fair, 2 poor). Empty or null hides it. Drawn with the FPS readout.
++    void set_net_readout(const char* text, int quality);
+     bool assist_tools_enabled() const;
+     int  fast_forward_multiplier() const;
+ 
+diff --git a/src/runtime/host_window.cpp b/src/runtime/host_window.cpp
+index 3210c20..63c2522 100644
+--- a/src/runtime/host_window.cpp
++++ b/src/runtime/host_window.cpp
+@@ -532,6 +532,8 @@ struct Backend {
+     // FPS readout (DisplayPerf hotkey): presents/sec in the title bar and on screen.
+     bool         fps_readout = false;
+     double       fps_value = 0.0;   // last readout, also drawn on screen
++    std::string  net_text;              // online connection line under the readout
++    int          net_quality = 0;       // 0 good, 1 fair, 2 poor (the dot's colour)
+     std::string  title;                 // base window title (readout restores it)
+     Uint32       fps_window_start = 0;
+     int          fps_presents = 0;
+@@ -1444,6 +1446,21 @@ void draw_fps(Backend* b, HostOverlay& ov) {
+     ov.fill_rect(x, y, w, h, pad, {0, 0, 0, 170}, OverlaySpace::Drawable);
+     ov.text(x + pad, y + pad, size, {255, 255, 255, 235}, text, OverlayAlign::Left,
+             OverlaySpace::Drawable);
++    if (b->net_text.empty()) return;
++    // The online line: a quality dot, then ping / delay / rollback.
++    const char* net = b->net_text.c_str();
++    const float dot = size * 0.6f;
++    const float w2 = dot + pad + ov.text_width(net, size, OverlaySpace::Drawable) + pad * 2.0f;
++    const float y2 = y + h + pad;
++    ov.fill_rect(x, y2, w2, h, pad, {0, 0, 0, 170}, OverlaySpace::Drawable);
++    if (b->net_quality <= 0)
++        ov.fill_rect(x + pad, y2 + (h - dot) * 0.5f, dot, dot, dot * 0.5f, {90, 220, 120, 255}, OverlaySpace::Drawable);
++    else if (b->net_quality == 1)
++        ov.fill_rect(x + pad, y2 + (h - dot) * 0.5f, dot, dot, dot * 0.5f, {255, 200, 60, 255}, OverlaySpace::Drawable);
++    else
++        ov.fill_rect(x + pad, y2 + (h - dot) * 0.5f, dot, dot, dot * 0.5f, {255, 90, 90, 255}, OverlaySpace::Drawable);
++    ov.text(x + pad + dot + pad, y2 + pad, size, {255, 255, 255, 235}, net, OverlayAlign::Left,
++            OverlaySpace::Drawable);
+ }
+ 
+ // Host chrome drawn over the game image, in order: the game's host overlay,
+@@ -3329,6 +3346,12 @@ bool HostWindow::fps_readout() const {
+     if (!open_ || !impl_) return false;
+     return static_cast<const Backend*>(impl_)->fps_readout;
+ }
++void HostWindow::set_net_readout(const char* text, int quality) {
++    if (!open_ || !impl_) return;
++    auto* b = static_cast<Backend*>(impl_);
++    b->net_text = text ? text : "";
++    b->net_quality = quality;
++}
+ 
+ void HostWindow::service_events() {
+     if (!open_ || !impl_) return;
+@@ -3826,6 +3849,7 @@ void host_haptic_pulse(int, float) {}
+ void host_request_settings_menu() {}
+ void HostWindow::set_fps_readout(bool /*on*/) {}
+ bool HostWindow::fps_readout() const { return false; }
++void HostWindow::set_net_readout(const char* /*text*/, int /*quality*/) {}
+ bool HostWindow::assist_tools_enabled() const { return true; }
+ int HostWindow::fast_forward_multiplier() const { return 4; }
+ 
+diff --git a/src/runtime/multiplayer_launch.h b/src/runtime/multiplayer_launch.h
+index 08bb242..d005755 100644
+--- a/src/runtime/multiplayer_launch.h
++++ b/src/runtime/multiplayer_launch.h
+@@ -62,6 +62,8 @@ struct GbaNetplayLaunch {
+     std::string program_id, build_identity, content_sha256;
+     void (*setup_instance)(GbaInstance&)=nullptr;
+     std::function<void()> pump_lobby;
++    // Optional: a line for the launcher's own log, e.g. the 30 s connection summary.
++    std::function<void(const std::string&)> log_line;
+     // Installed by make_gba_netplay_launch. This dependency boundary keeps
+     // single-player games free of a recomp-net link requirement.
+     int (*run)(const GbaNetplayLaunch&,const GbaNetplayBoot&)=nullptr;
+diff --git a/src/runtime/multiplayer_match.h b/src/runtime/multiplayer_match.h
+index caf9918..2fbaaa2 100644
+--- a/src/runtime/multiplayer_match.h
++++ b/src/runtime/multiplayer_match.h
+@@ -57,6 +57,8 @@ public:
+     const std::string& error() const { return error_; }
+     std::uint32_t next_tick() const { return host_.next_tick(); }
+     std::uint64_t replay_ticks() const;
++    // The rollback driver's round-trip estimate to the other seats; 0 without one.
++    std::uint32_t rtt_estimate_ms() const;
+     // Request save-and-leave through ordinary reliable/predicted input history.
+     // The request itself must confirm before either peer chooses the boundary.
+     void request_checkpoint();
+diff --git a/src/runtime/multiplayer_match.cpp b/src/runtime/multiplayer_match.cpp
+index 18e1457..777d5e1 100644
+--- a/src/runtime/multiplayer_match.cpp
++++ b/src/runtime/multiplayer_match.cpp
+@@ -72,6 +72,9 @@ void GbaNetplayMatch::fail(std::string message) {
+ std::uint64_t GbaNetplayMatch::replay_ticks() const {
+     return driver_ ? rnet_rb_driver_resim_ticks(driver_.get()) : replay_ticks_;
+ }
++std::uint32_t GbaNetplayMatch::rtt_estimate_ms() const {
++    return driver_ ? rnet_rb_driver_rtt_estimate_ms(driver_.get()) : 0;
++}
+ GbaNetplayMatch::Step GbaNetplayMatch::poll(bool allow_simulation) {
+     try {
+         rnet_session_pump(session_);
+diff --git a/src/runtime/multiplayer_runner.cpp b/src/runtime/multiplayer_runner.cpp
+index 63c9d54..f861e2e 100644
+--- a/src/runtime/multiplayer_runner.cpp
++++ b/src/runtime/multiplayer_runner.cpp
+@@ -133,6 +133,44 @@ int run(const GbaNetplayLaunch& launch,const GbaNetplayBoot& boot) {
+     match.sample_local=[&](std::uint32_t) { return buttons; };
+     GbaNetplayPacer pacer;
+     GbaNetplayOutput output;
++    // Connection quality while running: once a second the line under the FPS readout (F),
++    // every 30 s a summary for the launcher's log. The margin is how many frames early the
++    // other seats' inputs arrive (the session's remote lead, sampled every frame): above 0
++    // the match runs smoothly, at 0 or below it waits or rolls back. The input transit is
++    // what the delay does not cover: (delay - 1 - margin) frames. Rollback frames and freezes
++    // (input stalls that ended) are counted too; quality: good, fair or poor.
++    struct NetQuality {
++        GbaNetplayPacer::Clock::time_point second, window;
++        bool started = false;
++        unsigned forwards = 0;
++        std::uint64_t replay0 = 0;
++        std::uint32_t stalls0 = 0;
++        unsigned seconds = 0, rtt_n = 0, rtt_max = 0, wait_max = 0, poor = 0, fair = 0;
++        double fps_sum = 0, fps_min = 1e9;
++        std::uint64_t rtt_sum = 0, replay = 0;
++        std::uint32_t stalls = 0;
++        int delay = 0;
++        long long lead_sum = 0; unsigned lead_n = 0; int lead_min = 1 << 20;     // this second
++        long long w_lead_sum = 0; unsigned w_lead_n = 0; int w_lead_min = 1 << 20; // this window
++    } net;
++    const auto net_summary = [&](const char* when) {
++        if (!launch.log_line || !net.seconds) return;
++        char ping[48] = "n/a";
++        if (net.rtt_n) std::snprintf(ping, sizeof(ping), "avg %u max %u ms", unsigned(net.rtt_sum / net.rtt_n), net.rtt_max);
++        char line[360];
++        std::snprintf(line, sizeof(line),
++            "net %s %us: fps avg %.1f min %.1f | input margin avg %.1f min %d frames | ping %s "
++            "| delay %d | rollback %llu frames (%.1f/s) | freezes %u (longest wait %u ms) | seconds fair %u poor %u",
++            when, net.seconds, net.fps_sum / net.seconds, net.fps_min,
++            net.w_lead_n ? double(net.w_lead_sum) / net.w_lead_n : 0.0, net.w_lead_n ? net.w_lead_min : 0,
++            ping, net.delay,
++            static_cast<unsigned long long>(net.replay), double(net.replay) / net.seconds,
++            unsigned(net.stalls), net.wait_max, net.fair, net.poor);
++        launch.log_line(line);
++        net.seconds = net.rtt_n = net.rtt_max = net.wait_max = net.poor = net.fair = 0;
++        net.fps_sum = 0; net.fps_min = 1e9; net.rtt_sum = net.replay = 0; net.stalls = 0;
++        net.w_lead_sum = 0; net.w_lead_n = 0; net.w_lead_min = 1 << 20;
++    };
+     std::string previous_title;
+     bool closing=false;
+     while (true) {
+@@ -163,11 +201,58 @@ int run(const GbaNetplayLaunch& launch,const GbaNetplayBoot& boot) {
+         // simulation. A save hotkey requests a confirmed paired save-and-leave.
+         const auto now=GbaNetplayPacer::Clock::now();
+         const auto step=match.poll(pacer.ready(now));
+-        if (step==GbaNetplayMatch::Step::Forward) pacer.forwarded(now);
++        if (step==GbaNetplayMatch::Step::Forward) {
++            pacer.forwarded(now); ++net.forwards;
++            if (net.started) {
++                RNetSessionStats st{}; rnet_session_get_stats(match.transport(), &st);
++                net.lead_sum += st.remote_lead; ++net.lead_n; net.lead_min = std::min(net.lead_min, st.remote_lead);
++            }
++        }
++        if (match.phase()==GbaNetplayMatch::Phase::Running) {
++            if (!net.started) {
++                net.started = true; net.second = net.window = now; net.forwards = 0;
++                net.replay0 = match.replay_ticks();
++                RNetSessionStats st{}; rnet_session_get_stats(match.transport(), &st);
++                net.stalls0 = st.stall_streaks;
++            } else if (now - net.second >= std::chrono::seconds(1)) {
++                const double secs = std::chrono::duration<double>(now - net.second).count();
++                net.second = now;
++                RNetSessionStats st{}; rnet_session_get_stats(match.transport(), &st);
++                const unsigned rtt = match.rtt_estimate_ms();
++                const auto replay = match.replay_ticks();
++                const auto replayed = replay - net.replay0; net.replay0 = replay;
++                const auto stalls = st.stall_streaks - net.stalls0; net.stalls0 = st.stall_streaks;
++                const double fps = net.forwards / secs; net.forwards = 0;
++                const bool have_lead = net.lead_n > 0;
++                const double lead = have_lead ? double(net.lead_sum) / net.lead_n : 0.0;
++                const int lead_min = have_lead ? net.lead_min : 0;
++                net.w_lead_sum += net.lead_sum; net.w_lead_n += net.lead_n;
++                if (have_lead) net.w_lead_min = std::min(net.w_lead_min, lead_min);
++                net.lead_sum = 0; net.lead_n = 0; net.lead_min = 1 << 20;
++                const unsigned transit = unsigned(std::max(0.0, (int(st.delay) - 1 - lead) * 1000.0 / 59.7275));
++                const int quality = (rtt > 160 || stalls >= 2 || fps < 50 || (have_lead && lead_min < 0)) ? 2 :
++                                    (rtt > 80 || stalls >= 1 || replayed > 20 || fps < 57 ||
++                                     (have_lead && lead_min == 0)) ? 1 : 0;
++                char text[112];
++                if (rtt) std::snprintf(text, sizeof(text), "ping %u ms | delay %d | margin %d | rollback %llu/s",
++                                       rtt, int(st.delay), lead_min, static_cast<unsigned long long>(replayed));
++                else std::snprintf(text, sizeof(text), "lag ~%u ms | delay %d | margin %d | rollback %llu/s",
++                                   transit, int(st.delay), lead_min, static_cast<unsigned long long>(replayed));
++                window.set_net_readout(text, quality);
++                net.delay = int(st.delay);   // the live value, for the summary
++                ++net.seconds; net.fps_sum += fps; net.fps_min = std::min(net.fps_min, fps);
++                if (rtt) { net.rtt_sum += rtt; ++net.rtt_n; net.rtt_max = std::max(net.rtt_max, rtt); }
++                net.replay += replayed; net.stalls += stalls;
++                net.wait_max = std::max(net.wait_max, unsigned(st.max_admit_wait_ms));
++                if (quality == 2) ++net.poor; else if (quality == 1) ++net.fair;
++                if (now - net.window >= std::chrono::seconds(30)) { net.window = now; net_summary("last"); }
++            }
++        }
+         if (match.phase()==GbaNetplayMatch::Phase::Failed)
+             throw std::runtime_error(match.error());
+         if (match.checkpoint_pending() && !boot.finish_tick) closing=true;
+         if (match.phase()==GbaNetplayMatch::Phase::CheckpointReady) {
++            net_summary("final");
+             std::string error;
+             if (!match.store_checkpoint(checkpoint_absolute,&error))
+                 throw std::runtime_error(error);

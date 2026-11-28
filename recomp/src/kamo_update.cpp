@@ -13,6 +13,7 @@
 #include <windows.h>
 #include <shellapi.h>
 #include <winhttp.h>
+#include <bcrypt.h>
 #endif
 
 #ifndef KAMO_VERSION
@@ -45,8 +46,10 @@ std::string json_string(const std::string& json, const std::string& key, std::si
                         std::size_t* end = nullptr) {
     const auto k = json.find("\"" + key + "\"", from);
     if (k == std::string::npos) return {};
-    const auto open = json.find('"', json.find(':', k) + 1);
+    auto open = json.find(':', k + key.size() + 2);
     if (open == std::string::npos) return {};
+    open = json.find_first_not_of(" \t\r\n", open + 1);
+    if (open == std::string::npos || json[open] != '"') return {};  // null, a number, ...
     std::string out;
     std::size_t i = open + 1;
     for (; i < json.size() && json[i] != '"'; ++i) {
@@ -55,6 +58,18 @@ std::string json_string(const std::string& json, const std::string& key, std::si
     }
     if (end) *end = i;
     return out;
+}
+
+// The unsigned number value of the first `"key": 123` in [from, to).
+std::uint64_t json_number(const std::string& json, const std::string& key, std::size_t from, std::size_t to) {
+    const auto k = json.find("\"" + key + "\"", from);
+    if (k == std::string::npos || k >= to) return 0;
+    auto i = json.find(':', k + key.size() + 2);
+    if (i == std::string::npos) return 0;
+    i = json.find_first_not_of(" \t\r\n", i + 1);
+    std::uint64_t value = 0;
+    for (; i < json.size() && json[i] >= '0' && json[i] <= '9'; ++i) value = value * 10 + unsigned(json[i] - '0');
+    return value;
 }
 
 #if defined(_WIN32)
@@ -115,10 +130,52 @@ bool http_get(const std::string& url, std::string* out, std::ofstream* file,
         received += read;
         if (progress && total) progress->store(int(received * 100 / total));
     }
+    if (ok && total && received != total) { ok = false; *error = "incomplete download"; }
     if (request) WinHttpCloseHandle(request);
     if (connect) WinHttpCloseHandle(connect);
     WinHttpCloseHandle(session);
     return ok;
+}
+
+// SHA-256 of a file as lowercase hex, or "" when it cannot be read.
+std::string sha256_file(const std::filesystem::path& path) {
+    std::ifstream file(path, std::ios::binary);
+    if (!file) return {};
+    BCRYPT_ALG_HANDLE alg = nullptr;
+    BCRYPT_HASH_HANDLE hash = nullptr;
+    if (BCryptOpenAlgorithmProvider(&alg, BCRYPT_SHA256_ALGORITHM, nullptr, 0) != 0) return {};
+    std::string hex;
+    if (BCryptCreateHash(alg, &hash, nullptr, 0, nullptr, 0, 0) == 0) {
+        std::vector<char> buffer(1 << 16);
+        bool ok = true;
+        while (ok && file) {
+            file.read(buffer.data(), std::streamsize(buffer.size()));
+            const auto n = file.gcount();
+            if (n > 0) ok = BCryptHashData(hash, reinterpret_cast<PUCHAR>(buffer.data()), ULONG(n), 0) == 0;
+        }
+        unsigned char digest[32];
+        if (ok && !file.bad() && BCryptFinishHash(hash, digest, sizeof(digest), 0) == 0) {
+            static const char* digits = "0123456789abcdef";
+            for (unsigned char b : digest) { hex += digits[b >> 4]; hex += digits[b & 15]; }
+        }
+        BCryptDestroyHash(hash);
+    }
+    BCryptCloseAlgorithmProvider(alg, 0);
+    return hex;
+}
+
+// The downloaded installer is the one the release lists: same size, same SHA-256 (when the
+// release publishes them) and a Windows program at all.
+std::string check_installer(const std::filesystem::path& path, const UpdateInfo& info) {
+    std::error_code ec;
+    const auto size = std::filesystem::file_size(path, ec);
+    if (ec || size < 2) return "empty download";
+    if (info.size && size != info.size) return "wrong size";
+    char magic[2] = {};
+    std::ifstream(path, std::ios::binary).read(magic, 2);
+    if (magic[0] != 'M' || magic[1] != 'Z') return "not an installer";
+    if (!info.sha256.empty() && sha256_file(path) != info.sha256) return "checksum mismatch";
+    return {};
 }
 #endif
 
@@ -141,15 +198,18 @@ struct Updater::Impl {
     UpdateInfo info;
     std::string error;
     std::filesystem::path installer;
+    bool download_failed = false;
     std::thread worker;
-    ~Impl() { if (worker.joinable()) worker.join(); }
 };
 
-Updater::~Updater() { delete impl_; }
+Updater::~Updater() {
+    if (impl_ && impl_->worker.joinable()) impl_->worker.detach();
+}
 
 void Updater::start(bool installed) {
     installed_ = installed;
-    impl_ = new Impl;
+    if (impl_ && impl_->worker.joinable()) impl_->worker.detach();
+    impl_ = std::make_shared<Impl>();
     impl_->worker = std::thread([impl = impl_] {
 #if defined(_WIN32)
         std::string body, error;
@@ -166,13 +226,24 @@ void Updater::start(bool installed) {
         info.page_url = kReleasePage;
         for (std::size_t at = 0;;) {
             std::size_t end = 0;
+            const auto key = body.find("\"browser_download_url\"", at);
             const auto url = json_string(body, "browser_download_url", at, &end);
             if (url.empty()) break;
             // Only an installer attached to this repository's own releases.
             if (url.rfind(kDownloadPrefix, 0) == 0 &&
                 url.find("KAMO-Setup-") != std::string::npos && url.size() > 4 &&
-                url.compare(url.size() - 4, 4, ".exe") == 0)
+                url.compare(url.size() - 4, 4, ".exe") == 0) {
                 info.installer_url = url;
+                // GitHub lists an asset's size and digest before its download url.
+                info.size = json_number(body, "size", at, key);
+                info.sha256.clear();
+                const auto d = body.rfind("\"digest\"", key);
+                if (d != std::string::npos && d >= at) {
+                    const auto digest = json_string(body, "digest", d);
+                    if (digest.rfind("sha256:", 0) == 0)
+                        for (char c : digest.substr(7)) info.sha256 += char(c >= 'A' && c <= 'F' ? c - 'A' + 'a' : c);
+                }
+            }
             at = end;
         }
         std::lock_guard<std::mutex> g(impl->lock);
@@ -186,6 +257,15 @@ void Updater::start(bool installed) {
 }
 
 Updater::State Updater::state() const { return impl_ ? impl_->state.load() : State::UpToDate; }
+bool Updater::busy() const {
+    const auto s = state();
+    return s == State::Downloading || s == State::Verifying || s == State::Ready;
+}
+bool Updater::download_failed() const {
+    if (!impl_) return false;
+    std::lock_guard<std::mutex> g(impl_->lock);
+    return impl_->download_failed;
+}
 int Updater::progress() const { return impl_ ? impl_->progress.load() : 0; }
 UpdateInfo Updater::info() const {
     if (!impl_) return {};
@@ -202,6 +282,12 @@ void Updater::download() {
     if (!impl_ || impl_->state != State::Available) return;
     const auto info = this->info();
     if (info.installer_url.empty()) { open_release_page(); return; }
+    {
+        std::lock_guard<std::mutex> g(impl_->lock);
+        impl_->download_failed = false;
+        impl_->error.clear();
+    }
+    impl_->progress = 0;
     impl_->state = State::Downloading;
     if (impl_->worker.joinable()) impl_->worker.join();
     impl_->worker = std::thread([impl = impl_, info] {
@@ -213,12 +299,30 @@ void Updater::download() {
         {
             std::ofstream file(path, std::ios::binary | std::ios::trunc);
             ok = file && http_get(info.installer_url, nullptr, &file, &impl->progress, &error);
+            if (ok) { file.close(); ok = !file.fail(); }
+        }
+        if (ok) {
+            impl->state = State::Verifying;
+            error = check_installer(path, info);
+            ok = error.empty();
+            if (!ok) std::filesystem::remove(path, ec);  // never run a file that did not check out
         }
         std::lock_guard<std::mutex> g(impl->lock);
         if (ok) { impl->installer = path; impl->state = State::Ready; }
-        else { impl->error = error.empty() ? "download failed" : error; impl->state = State::Failed; }
+        else {
+            impl->error = error.empty() ? "download failed" : error;
+            impl->download_failed = true;
+            impl->state = State::Failed;
+            std::fprintf(stderr, "KAMO: update failed: %s\n", impl->error.c_str());
+        }
 #endif
     });
+}
+
+void Updater::retry() {
+    if (!impl_ || impl_->state != State::Failed) return;
+    if (download_failed()) { impl_->state = State::Available; download(); }
+    else start(installed_);
 }
 
 bool Updater::launch_installer() {
