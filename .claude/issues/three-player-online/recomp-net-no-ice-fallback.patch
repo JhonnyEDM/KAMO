@@ -1,0 +1,19 @@
+diff --git a/src/lobby/rnet_lobby_client.c b/src/lobby/rnet_lobby_client.c
+index 23be3da..e63983c 100644
+--- a/src/lobby/rnet_lobby_client.c
++++ b/src/lobby/rnet_lobby_client.c
+@@ -2960,6 +2960,14 @@ static void handle_server_json(const char *json)
+         }
+         g_lc.join.transport_ice_hub =
+             (g_lc.join.transport_host && g_lc.match_caps.relay_via_ice) ? 1 : 0;
++        /* KAMO: a build without ICE cannot carry the match over waiting-room
++         * agents, so it never connects them; the server still names "ice" for
++         * rooms of three or more. Use the host relay over the advertised UDP
++         * port instead, the route two-seat rooms already take. */
++        if (g_lc.join.transport_ice_hub && !rnet_host_ice_available()) {
++            g_lc.join.transport_ice_hub = 0;
++            g_lc.match_caps.relay_via_ice = 0;
++        }
+         if (relay_endpoint[0] && endpoint_has_usable_port(relay_endpoint)) {
+             strncpy(g_lc.join.host_endpoint, relay_endpoint,
+                     sizeof(g_lc.join.host_endpoint) - 1);
