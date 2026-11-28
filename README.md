@@ -59,7 +59,8 @@ See the [roadmap](docs/ROADMAP.md) for details.
    menu** there, or closing the window, returns to KAMO's menu. **Options > Shortcuts** lists
    the other keys.
 
-KAMO checks for a new version when it starts and offers to update itself. It also works from
+Each time its menu opens, KAMO checks for a new version. An installed copy downloads it, checks
+the installer's size and SHA-256 against the release, and updates itself. It also works from
 [RecompLauncher](https://github.com/elripalda/RecompLauncher): the release zip carries a
 `recomplauncher.json`, and the launcher hands KAMO the ROM and installs the updates.
 

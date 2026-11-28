@@ -85,7 +85,7 @@ target_include_directories(KAMO PRIVATE
     "${KAMO_RECOMP_UI_DIR}/src/third_party/imgui"
     "${KAMO_RECOMP_UI_DIR}/src/third_party/imgui/backends")
 if(WIN32)
-    target_link_libraries(KAMO PRIVATE winhttp ws2_32 opengl32)
+    target_link_libraries(KAMO PRIVATE winhttp bcrypt ws2_32 opengl32)
 endif()
 target_include_directories(KAMO PRIVATE ${KAMO_INCLUDES})
 target_link_gbarecomp_runtime_stack(KAMO kamo_generated gbarecomp_netplay)

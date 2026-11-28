@@ -5,6 +5,7 @@
 #include "kamo_frontend.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -251,6 +252,11 @@ struct Front {
     bool room_private = false;
     int room_players = 4;
     std::string joining_id;
+    Uint32 bar_since = 0;       // update bar: when it slid in
+    Uint32 bar_hide_at = 0;     // update bar: when it starts sliding away (0 = stays)
+    Uint32 ready_since = 0;     // the installer checked out at this time
+    bool auto_update = false;   // the download started by itself once
+    bool install_failed = false;
     Uint32 waiting_since = 0;   // when the Room screen began waiting for the server
     bool create_sent = false;   // a create is on its way: the room exists before in_lobby says so
     bool continue_saved = false;
@@ -296,6 +302,8 @@ void draw_logo(Front& f, float max_width) {
 }
 
 // ---- screens ----------------------------------------------------------------------------
+void draw_update_bar(Front& f);
+
 void screen_setup(Front& f) {
     ImGui::Dummy(ImVec2(0, 20));
     draw_logo(f, 360);
@@ -311,42 +319,252 @@ void screen_setup(Front& f) {
     ImGui::Dummy(ImVec2(0, 16));
     centered_text(T("KAMO no incluye el juego. Solo se acepta el archivo .gba de la versión USA.",
                     "KAMO does not include the game. Only the USA .gba file is accepted."), kSoftInk);
+    draw_update_bar(f);
+}
+
+// ---- update bar ---------------------------------------------------------------------------
+// A pixel-art bar along the bottom of the menu that follows the updater: checking, downloading,
+// verifying, installing. Its mascot is an original pink puffball drawn here pixel by pixel, not
+// a sprite from the game. Two frames: standing and mid-step.
+constexpr int kPuffSize = 16;
+const char* const kPuff[2][kPuffSize] = {
+    {"................", "......kkkk......", "....kkppppkk....", "...klpppppppk...",
+     "..klpwppppwppk..", ".kplpbppppbpppk.", ".kpppbppppbpppk.", "kppppppppppppppk",
+     "kppccppppppccppk", "kppppppkkppppppk", "kppppppppppppppk", ".kppppppppppppk.",
+     ".kppppppppppppk.", "..kkppppppppkk..", "..rrrrkkkkrrrr..", ".RRRRRR..RRRRRR."},
+    {"......kkkk......", "....kkppppkk....", "...klpppppppk...", "..klpwppppwppk..",
+     ".kplpbppppbpppk.", ".kpppbppppbpppk.", "kppppppppppppppk", "kppccppppppccppk",
+     "kppppppkkppppppk", "kppppppppppppppk", ".kppppppppppppk.", ".kppppppppppppk.",
+     "..kkppppppppkk..", "...rrrrkkkkrrr..", "..RRRRR...RRRR..", "................"},
+};
+
+ImU32 puff_color(char c) {
+    switch (c) {
+    case 'k': return IM_COL32(84, 32, 70, 255);     // outline
+    case 'p': return IM_COL32(255, 160, 196, 255);  // body
+    case 'l': return IM_COL32(255, 222, 236, 255);  // shine
+    case 'c': return IM_COL32(244, 96, 150, 255);   // cheeks
+    case 'w': return IM_COL32(255, 255, 255, 255);  // eye glint
+    case 'b': return IM_COL32(40, 28, 96, 255);     // eyes
+    case 'r': return IM_COL32(226, 40, 72, 255);    // feet
+    case 'R': return IM_COL32(168, 22, 52, 255);    // feet, shade
+    default: return 0;
+    }
+}
+
+void draw_puff(ImDrawList* dl, ImVec2 at, float px, int frame, bool flip) {
+    for (int y = 0; y < kPuffSize; ++y)
+        for (int x = 0; x < kPuffSize; ++x) {
+            const ImU32 c = puff_color(kPuff[frame][y][flip ? kPuffSize - 1 - x : x]);
+            if (!c) continue;
+            const ImVec2 a(std::floor(at.x + x * px), std::floor(at.y + y * px));
+            dl->AddRectFilled(a, ImVec2(a.x + px, a.y + px), c);
+        }
+}
+
+// A four-point pixel star.
+void draw_star(ImDrawList* dl, ImVec2 c, float px, ImU32 color) {
+    c = ImVec2(std::floor(c.x), std::floor(c.y));
+    dl->AddRectFilled(ImVec2(c.x - px * 0.5f, c.y - px * 1.5f), ImVec2(c.x + px * 0.5f, c.y + px * 1.5f), color);
+    dl->AddRectFilled(ImVec2(c.x - px * 1.5f, c.y - px * 0.5f), ImVec2(c.x + px * 1.5f, c.y + px * 0.5f), color);
+}
+
+ImU32 mix(ImU32 a, ImU32 b, float t) {
+    const ImVec4 x = ImGui::ColorConvertU32ToFloat4(a), y = ImGui::ColorConvertU32ToFloat4(b);
+    return ImGui::ColorConvertFloat4ToU32(ImVec4(x.x + (y.x - x.x) * t, x.y + (y.y - x.y) * t,
+                                                 x.z + (y.z - x.z) * t, x.w + (y.w - x.w) * t));
 }
 
 void draw_update_bar(Front& f) {
+    using S = Updater::State;
+    if (!f.updater.started()) return;
+    const Uint32 now = SDL_GetTicks();
+    const S state = f.updater.state();
     const auto info = f.updater.info();
+    const bool can_install = f.updater.installed() && !info.installer_url.empty();
+    if (!f.bar_since) f.bar_since = now;
+
+    // A newer release was found: an installed copy updates by itself.
+    if (state == S::Available && can_install && !f.auto_update) {
+        f.auto_update = true;
+        f.updater.download();
+    }
+    // Up to date, or the check failed: say so for a moment, then the bar slides away.
+    const bool settles = state == S::UpToDate || (state == S::Failed && !f.updater.download_failed());
+    if (!settles) f.bar_hide_at = 0;
+    else if (!f.bar_hide_at) f.bar_hide_at = now + (state == S::UpToDate ? 2200 : 4500);
+    float slide = std::min(1.0f, float(now - f.bar_since) / 280.0f);
+    if (f.bar_hide_at && now > f.bar_hide_at)
+        slide = 1.0f - std::min(1.0f, float(now - f.bar_hide_at) / 280.0f);
+    if (slide <= 0) return;
+    slide = 1 - (1 - slide) * (1 - slide);
+
+    // The installer runs a moment after it checks out, so the player sees it happen.
+    if (state == S::Ready && !f.install_failed) {
+        if (!f.ready_since) f.ready_since = now;
+        else if (now - f.ready_since > 1400) {
+            if (f.updater.launch_installer()) { f.quit = true; return; }
+            f.install_failed = true;
+        }
+    }
+
+    const ImU32 ink = ImGui::ColorConvertFloat4ToU32(kInk);
+    const ImU32 bad = ImGui::ColorConvertFloat4ToU32(kBad);
+    const ImU32 good = ImGui::ColorConvertFloat4ToU32(kGood);
+    const ImU32 pink = ImGui::ColorConvertFloat4ToU32(kPink);
+    const ImU32 pink_dark = ImGui::ColorConvertFloat4ToU32(kPinkActive);
+    const ImU32 pale = IM_COL32(255, 247, 251, 255);
+    const ImU32 gold = IM_COL32(255, 200, 40, 255);
+
     std::string text;
-    switch (f.updater.state()) {
-    case Updater::State::Available:
-        text = std::string(T("Nueva versión ", "New version ")) + info.version;
+    ImU32 text_color = ink;
+    const char* action = nullptr;  // a button on the right, when the player has something to do
+    const std::string dots((now / 350) % 4, '.');
+    switch (state) {
+    case S::Checking:
+        text = std::string(T("Validando actualización", "Checking for updates")) + dots;
         break;
-    case Updater::State::Downloading:
-        text = std::string(T("Descargando ", "Downloading ")) + info.version + "... " +
+    case S::UpToDate:
+        text = std::string(T("¡KAMO está al día! ", "KAMO is up to date! ")) + "v" KAMO_VERSION;
+        text_color = good;
+        break;
+    case S::Available:
+        if (can_install) {
+            text = std::string(T("¡Versión nueva encontrada! ", "New version found! ")) + info.version;
+        } else {
+            text = std::string(T("Nueva versión ", "New version ")) + info.version + T(" disponible", " available");
+            action = T("Descargar", "Download");
+        }
+        break;
+    case S::Downloading:
+        text = std::string(T("Actualizando a la ", "Updating to ")) + info.version + "... " +
                std::to_string(f.updater.progress()) + "%";
         break;
-    case Updater::State::Ready:
-        if (f.updater.launch_installer()) { f.quit = true; return; }
-        text = T("No se pudo abrir el instalador.", "The installer could not be started.");
+    case S::Verifying:
+        text = std::string(T("Comprobando la descarga", "Verifying the download")) + dots;
         break;
-    default:
-        return;
+    case S::Ready:
+        if (f.install_failed) {
+            text = T("No se pudo abrir el instalador.", "The installer could not be started.");
+            text_color = bad;
+            action = T("Abrir página", "Open page");
+        } else {
+            text = std::string(T("¡Listo! Instalando ", "Done! Installing ")) + info.version +
+                   T(", KAMO se abrirá solo", ", KAMO will reopen by itself");
+            text_color = good;
+        }
+        break;
+    case S::Failed:
+        if (f.updater.download_failed()) {
+            text = std::string(T("No se pudo actualizar: ", "Could not update: ")) + f.updater.error();
+            action = T("Reintentar", "Try again");
+        } else {
+            text = T("No se pudo validar la actualización.", "Could not check for updates.");
+        }
+        text_color = bad;
+        break;
     }
-    const float bar = 64;
-    ImGui::SetCursorPos(ImVec2(0, ImGui::GetWindowHeight() - bar));
-    ImGui::PushStyleColor(ImGuiCol_ChildBg, rgb(255, 214, 231));
-    ImGui::BeginChild("update", ImVec2(ImGui::GetWindowWidth(), bar), 0, ImGuiWindowFlags_NoScrollbar);
-    ImGui::SetCursorPos(ImVec2(28, 18));
-    ImGui::TextUnformatted(text.c_str());
-    if (f.updater.state() == Updater::State::Available) {
-        ImGui::SameLine(ImGui::GetWindowWidth() - 220);
-        ImGui::SetCursorPosY(12);
-        if (button(T("Actualizar ahora", "Update now"), 190)) {
-            if (f.updater.installed()) f.updater.download();
+
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    const ImVec2 wp = ImGui::GetWindowPos();
+    const float W = ImGui::GetWindowWidth(), bar_h = 92;
+    const float x0 = wp.x, y0 = wp.y + ImGui::GetWindowHeight() - bar_h * slide;
+    dl->AddRectFilled(ImVec2(x0, y0), ImVec2(x0 + W, y0 + bar_h), IM_COL32(255, 214, 231, 255));
+    // Checkered pixel border that scrolls along the top.
+    const float cell = 4;
+    const int shift = int(now / 140);
+    for (int row = 0; row < 2; ++row)
+        for (int i = 0; i * cell < W; ++i) {
+            const bool dark = ((i + row + shift) & 1) != 0;
+            dl->AddRectFilled(ImVec2(x0 + i * cell, y0 + row * cell),
+                              ImVec2(x0 + (i + 1) * cell, y0 + (row + 1) * cell), dark ? pink_dark : pink);
+        }
+
+    // Text with a one-pixel-art drop shadow.
+    ImFont* font = g_big_font ? g_big_font : ImGui::GetFont();
+    const float font_size = 24;
+    dl->AddText(font, font_size, ImVec2(x0 + 26, y0 + 14), IM_COL32(255, 255, 255, 255), text.c_str());
+    dl->AddText(font, font_size, ImVec2(x0 + 24, y0 + 12), text_color, text.c_str());
+
+    // The track: a row of pixel blocks.
+    const float tx = x0 + 24, tw = W - 48, ty = y0 + 70, th = 12;
+    dl->AddRectFilled(ImVec2(tx - 3, ty - 3), ImVec2(tx + tw + 3, ty + th + 3), ink);
+    dl->AddRectFilled(ImVec2(tx, ty), ImVec2(tx + tw, ty + th), pale);
+    const float bw = 10, gap = 3;
+    const int blocks = std::max(1, int((tw - gap) / (bw + gap)));
+    const float step = (tw - gap) / blocks;
+    const float px = 2, puff = kPuffSize * px;
+    const float track_end = std::max(0.0f, tw - puff);
+
+    float sx = 0, hop = 0;   // mascot position along the track, height above it
+    int frame = 0;
+    bool flip = false, stars = false;
+    int lit = 0;             // blocks filled from the left
+    float scan = -100;       // block index the scanning light is on
+    switch (state) {
+    case S::Checking: {
+        const float t = float(now % 3000) / 1500.0f;  // walks across and back
+        flip = t >= 1;
+        sx = (t < 1 ? t : 2 - t) * track_end;
+        frame = (now / 150) % 2;
+        scan = (sx + puff / 2) / step;
+        break;
+    }
+    case S::Downloading: {
+        lit = blocks * f.updater.progress() / 100;
+        sx = std::clamp(lit * step - puff / 2, 0.0f, track_end);
+        frame = (now / 90) % 2;   // running
+        break;
+    }
+    case S::Verifying:
+        lit = blocks;
+        scan = float((now / 40) % unsigned(blocks + 8));
+        sx = track_end;
+        hop = std::fabs(std::sin(now / 160.0f)) * 5;
+        break;
+    case S::UpToDate:
+    case S::Ready:
+        lit = blocks;
+        sx = track_end;
+        hop = std::fabs(std::sin(now / 130.0f)) * (state == S::Ready ? 12.0f : 6.0f);
+        frame = hop > 3 ? 1 : 0;
+        stars = !f.install_failed;
+        break;
+    case S::Available:
+        sx = 0;
+        hop = std::fabs(std::sin(now / 200.0f)) * 4;
+        break;
+    case S::Failed:
+        sx = 0;
+        break;
+    }
+    for (int i = 0; i < blocks; ++i) {
+        const float bx = tx + gap + i * step;
+        ImU32 c = IM_COL32(246, 200, 220, 255);
+        if (i < lit) c = state == S::UpToDate ? good : pink;
+        const float glow = 1.0f - std::min(1.0f, std::fabs(i - scan) / 4.0f);
+        if (glow > 0) c = mix(c, i < lit ? IM_COL32(255, 255, 255, 255) : pink_dark, glow);
+        if (state == S::Failed) c = IM_COL32(236, 200, 212, 255);
+        dl->AddRectFilled(ImVec2(std::floor(bx), ty + 2), ImVec2(std::floor(bx + step - gap), ty + th - 2), c);
+    }
+    const ImVec2 at(tx + sx, ty - 3 - puff - std::floor(hop));
+    draw_puff(dl, at, px, frame, flip);
+    if (stars) {
+        const ImVec2 spots[3] = {{-10, 6}, {puff + 8, 2}, {puff / 2, -10}};
+        for (int k = 0; k < 3; ++k)
+            if (((now / 160) + unsigned(k)) % 3 != 0)
+                draw_star(dl, ImVec2(at.x + spots[k].x, at.y + spots[k].y), 2, k == 1 ? gold : IM_COL32(255, 255, 255, 255));
+    }
+
+    if (action) {
+        const float bwid = 180;
+        ImGui::SetCursorScreenPos(ImVec2(x0 + W - 24 - bwid, y0 + 14));
+        if (button(action, bwid)) {
+            if (state == S::Failed) { f.bar_since = now; f.updater.retry(); }
+            else if (state == S::Available && f.updater.installed() && !info.installer_url.empty()) f.updater.download();
             else f.updater.open_release_page();
         }
     }
-    ImGui::EndChild();
-    ImGui::PopStyleColor();
 }
 
 // Also leaves a room whose create the server has not answered yet: the leave reaches the
@@ -361,11 +579,13 @@ void screen_menu(Front& f) {
     ImGui::Dummy(ImVec2(0, 24));
     draw_logo(f, 400);
     ImGui::Dummy(ImVec2(0, 28));
-    if (big_button(T("Jugar solo", "Play alone"))) {
+    // While an update downloads and installs, the game waits: it would be replaced under it.
+    const bool updating = f.updater.busy() && !f.install_failed;
+    if (big_button(T("Jugar solo", "Play alone"), 340, !updating)) {
         if (!check_rom(f.rom).empty()) { f.screen = Screen::Setup; return; }
         f.start_game = true;
     }
-    if (big_button(T("Jugar online", "Play online"))) {
+    if (big_button(T("Jugar online", "Play online"), 340, !updating)) {
         if (!check_rom(f.rom).empty()) { f.screen = Screen::Setup; return; }
         f.message.clear();
         f.screen = Screen::Online;
