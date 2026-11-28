@@ -70,7 +70,8 @@ are covered by the GCC Runtime Library Exception..
 
 ## recomp-ui
 
-The launcher window and online lobby of the recompiled build (`external/recomp-ui`).
+The online lobby backend and in-game menu of the recompiled build (`external/recomp-ui`); KAMO's
+own menu is drawn with its copy of Dear ImGui.
 https://github.com/mstan/recomp-ui. MIT License, Copyright (c) 2026 Matthew Stanley; full text
 in `external/recomp-ui/LICENSE`. It bundles, each under its own license:
 
@@ -81,8 +82,8 @@ in `external/recomp-ui/LICENSE`. It bundles, each under its own license:
   Font License 1.1.
 - OpenMoji emoji font, Copyright OpenMoji Project, under CC BY-SA 4.0.
 
-Details are in `assets/common/fonts/NOTICE.md` and `assets/common/img/NOTICE.md` of recomp-ui,
-copied into the `licenses` folder of each download.
+Details are in `assets/common/fonts/NOTICE.md` and `assets/common/img/NOTICE.md` of recomp-ui;
+the fonts notice is copied into the `licenses` folder of each download.
 
 The online lobby connects to the public lobby server `netplay.retcomm.net`, run by the
 recomp-net project. It receives the game name, the build version, a fingerprint of the ROM

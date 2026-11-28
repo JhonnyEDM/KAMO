@@ -1,0 +1,311 @@
+diff --git a/src/runtime/bios_hle.cpp b/src/runtime/bios_hle.cpp
+index 270f44f..ae515c3 100644
+--- a/src/runtime/bios_hle.cpp
++++ b/src/runtime/bios_hle.cpp
+@@ -31,6 +31,7 @@
+ 
+ #include "runtime_arm.h"  // g_cpu, runtime_tick, bus_read_u*/bus_write_u*
+ #include "runtime_bus_bridge.h"
++#include "runtime_context.h"
+ 
+ #include <bit>
+ #include <cmath>
+@@ -565,8 +566,56 @@ int dispatch(uint32_t swi) {
+     return 1;
+ }
+ 
++// RegisterRamReset (SWI 0x01), from the GBATEK description: r0 selects the
++// memory and register groups to clear. Needed when no BIOS image is present.
++void do_register_ram_reset() {
++    const uint32_t flags = R(0);
++    auto fill = [](uint32_t base, uint32_t size) {
++        for (uint32_t a = 0; a < size; a += 4) wr32(base + a, 0);
++    };
++    wr16(0x04000000u, 0x0080u);                        // DISPCNT: forced blank
++    if (flags & 0x01u) fill(0x02000000u, 0x40000u);    // on-board WRAM
++    if (flags & 0x02u) fill(0x03000000u, 0x7E00u);     // on-chip WRAM, stack area kept
++    if (flags & 0x04u) fill(0x05000000u, 0x400u);      // palette
++    if (flags & 0x08u) fill(0x06000000u, 0x18000u);    // VRAM
++    if (flags & 0x10u) fill(0x07000000u, 0x400u);      // OAM
++    if (flags & 0x20u) {                               // serial: general-purpose mode
++        for (uint32_t a = 0x04000120u; a < 0x0400012Cu; a += 2) wr16(a, 0);
++        wr16(0x04000134u, 0x8000u);
++        wr16(0x04000140u, 0);
++        for (uint32_t a = 0x04000150u; a < 0x04000159u; a += 2) wr16(a, 0);
++    }
++    if (flags & 0x40u) {                               // sound
++        wr16(0x04000084u, 0);                          // master off clears the PSG registers
++        for (uint32_t a = 0x04000060u; a < 0x04000084u; a += 2) wr16(a, 0);
++        for (uint32_t a = 0x04000090u; a < 0x040000A8u; a += 2) wr16(a, 0);
++        wr16(REG_SOUNDBIAS, 0x0200u);
++    }
++    if (flags & 0x80u) {                               // every other register
++        for (uint32_t a = 0x04000002u; a < 0x04000060u; a += 2) wr16(a, 0);
++        wr16(0x04000020u, 0x0100u); wr16(0x04000026u, 0x0100u);   // BG2PA, BG2PD
++        wr16(0x04000030u, 0x0100u); wr16(0x04000036u, 0x0100u);   // BG3PA, BG3PD
++        for (uint32_t a = 0x040000B0u; a < 0x04000110u; a += 2) wr16(a, 0);
++        wr16(0x04000200u, 0); wr16(0x04000202u, 0xFFFFu);          // IE, IF (acknowledge)
++        wr16(0x04000204u, 0); wr16(0x04000208u, 0);                // WAITCNT, IME
++    }
++}
++
+ int dispatch_native(uint32_t swi) {
+-    if (!dispatch(swi)) return 0;
++    if (swi == 0x01u) {
++        do_register_ram_reset();
++        runtime_tick(45);
++    } else if (!dispatch(swi)) {
++        // Without a BIOS image there is no original routine to fall back to.
++        // Halt, IntrWait and VBlankIntrWait continue in the interrupt service.
++        static uint64_t reported = (1ull << 2) | (1ull << 4) | (1ull << 5);
++        if (swi < 64 && !(reported & (1ull << swi))) {
++            reported |= 1ull << swi;
++            std::fprintf(stderr, "[gbarecomp:bios] native BIOS service missing: SWI 0x%02X\n",
++                         static_cast<unsigned>(swi));
++        }
++        return 0;
++    }
+     gbarecomp::active_bus()->latch_bios_prefetch(0x188u, false);
+     return 1;
+ }
+@@ -634,6 +683,28 @@ void bios_hle_boot_skip(uint32_t cart_entry) {
+         bus->latch_bios_prefetch(0xdcu, false);
+ }
+ 
++void bios_hle_native_boot(gbarecomp::RuntimeArmContext& context, GbaBus& bus, uint32_t cart_entry) {
++    // The bios_hle_boot_skip() handoff state for a machine that is not the
++    // active one (multiplayer sessions keep one CPU context per console).
++    bios_hle_set_mode(BiosHleMode::Native);
++    bios_hle_set_interrupts_enabled(true);
++    context.bios_hook = g_bios_hle_hook;
++    context.bios_dispatch_hook = g_bios_hle_dispatch_hook;
++    ArmCpuState& cpu = context.cpu;
++    cpu = ArmCpuState{};
++    cpu.banked_sp[ARM_BANK_SUPERVISOR] = 0x03007FE0u;
++    cpu.banked_sp[ARM_BANK_IRQ]        = 0x03007FA0u;
++    cpu.banked_sp[ARM_BANK_USER]       = 0x03007F00u;
++    cpu.R[13] = 0x03007F00u;
++    cpu.cpsr  = 0x0000001Fu;
++    cpu.R[15] = cart_entry;
++    bus.enable_native_bios();
++    bus.write32(0x03007FFCu, 0);
++    bus.write16(0x04000134u, 0x8000u);
++    bus.write8(0x04000300u, 1u);
++    bus.latch_bios_prefetch(0xdcu, false);
++}
++
+ BiosHleMode bios_hle_mode() { return g_mode; }
+ 
+ const char* bios_hle_mode_name(BiosHleMode mode) {
+diff --git a/src/runtime/bios_hle.h b/src/runtime/bios_hle.h
+index 1dd9958..805ba74 100644
+--- a/src/runtime/bios_hle.h
++++ b/src/runtime/bios_hle.h
+@@ -31,8 +31,12 @@
+ 
+ #include <cstdint>
+ 
++namespace gbarecomp { struct RuntimeArmContext; }
++
+ namespace gba {
+ 
++class GbaBus;
++
+ enum class BiosHleMode {
+     Off,   // legacy catalog off; independently built native families remain
+     On,    // HLE where implemented, LLE fallback otherwise
+@@ -47,6 +51,11 @@ void bios_hle_set_interrupts_enabled(bool enabled);
+ // Fixed build identity, independent of the grandfathered catalog mode.
+ bool bios_native_math_enabled();
+ 
++// Boot one multiplayer console without a BIOS image: the bios_hle_boot_skip()
++// handoff state written to that console's execution context and bus, with the
++// native BIOS services installed in that context (each console keeps its own).
++void bios_hle_native_boot(gbarecomp::RuntimeArmContext& context, GbaBus& bus, uint32_t cart_entry);
++
+ // Current mode (for the startup banner / diagnostics).
+ BiosHleMode bios_hle_mode();
+ 
+diff --git a/src/runtime/bios_interrupt_hle.cpp b/src/runtime/bios_interrupt_hle.cpp
+index 7cbf1dc..151d1de 100644
+--- a/src/runtime/bios_interrupt_hle.cpp
++++ b/src/runtime/bios_interrupt_hle.cpp
+@@ -210,6 +210,15 @@ int dispatch_firmware(uint32_t pc, int thumb) {
+     const uint32_t mode = g_cpu.cpsr & 0x1fu;
+     auto* bus = gbarecomp::active_bus();
+     if (!bus) return 0;
++    // Without a BIOS image a linked session reaches the wait loop right after
++    // a wake, before its instruction boundary. Take a pending IRQ first, as the
++    // CPU does before the next BIOS instruction.
++    if ((pc == kWaitResume || pc == kHaltResume) && bus->native_bios() &&
++        mode == kSystemMode && !(g_cpu.cpsr & kIrqMask) && bus->io().irq_pending()) {
++        g_cpu.R[15] = pc;
++        runtime_irq(pc);
++        return 1;
++    }
+     if (pc == kSwiVector && mode == kSvcMode) return enter_interrupt_service(*bus);
+     if (pc == kHaltResume && mode == kSystemMode && g_cpu.R[14] == 0x170u &&
+         g_cpu.R[12] == kIoBase) {
+diff --git a/src/runtime/multiplayer_runner.cpp b/src/runtime/multiplayer_runner.cpp
+index 877ec26..63c9d54 100644
+--- a/src/runtime/multiplayer_runner.cpp
++++ b/src/runtime/multiplayer_runner.cpp
+@@ -1,3 +1,4 @@
++#include "bios_hle.h"
+ #include "multiplayer_launch.h"
+ #include "multiplayer_match.h"
+ #include "multiplayer_pacing.h"
+@@ -46,7 +47,8 @@ int run(const GbaNetplayLaunch& launch,const GbaNetplayBoot& boot) {
+         if (!original.empty() && checkpoint_absolute==std::filesystem::weakly_canonical(original))
+             throw std::invalid_argument("paired checkpoint must not replace a cartridge save, ROM or BIOS");
+     std::filesystem::create_directories(checkpoint_absolute.parent_path());
+-    if (!boot.bios || !boot.rom || boot.bios->sha1_hex()!=gba::GbaBios::kExpectedSha1 ||
++    // No BIOS image: a build without linked BIOS code boots each console natively.
++    if (!boot.rom || (boot.bios && boot.bios->sha1_hex()!=gba::GbaBios::kExpectedSha1) ||
+         gba::sha1(boot.rom->data(),boot.rom->size()).hex()!=boot.expected_rom_sha1)
+         throw std::invalid_argument("netplay asset verification failed");
+     if (!valid_save_size(boot.save.type,boot.save.size))
+@@ -66,6 +68,7 @@ int run(const GbaNetplayLaunch& launch,const GbaNetplayBoot& boot) {
+         auto& m=simulation.machine(id);
+         m.ppu.set_rasterization_enabled(false);
+         m.bus.set_bios(boot.bios); m.bus.set_rom(boot.rom->data(),boot.rom->size());
++        if (!boot.bios) gba::bios_hle_native_boot(m.execution,m.bus,0x08000000u);
+         configure_save(m.bus.save(),boot.save);
+         if (launch.setup_instance) launch.setup_instance(m);
+     }
+@@ -83,9 +86,9 @@ int run(const GbaNetplayLaunch& launch,const GbaNetplayBoot& boot) {
+     options.force_turn=launch.force_turn;
+     options.planned_finish_tick=boot.finish_tick;
+     options.identity=std::string(launch.medium==GbaLinkMedium::Wireless ? "gba-wireless/1:" : "gba-cable/1:")+launch.program_id+":"+launch.build_identity+":"+
+-        boot.expected_rom_sha1+":"+boot.bios->sha1_hex()+":"+
++        boot.expected_rom_sha1+":"+(boot.bios ? boot.bios->sha1_hex() : std::string("no-bios"))+":"+
+         std::to_string(static_cast<unsigned>(boot.save.type))+":"+std::to_string(boot.save.size)+":"+
+-        gba_netplay_seat_identity(launch)+":native-lle";
++        gba_netplay_seat_identity(launch)+(boot.bios ? ":native-lle" : ":native-hle");
+     const auto identity_digest=gba::sha1(reinterpret_cast<const std::uint8_t*>(options.identity.data()),options.identity.size());
+     options.build_fingerprint=std::uint32_t(identity_digest.bytes[0])|
+         (std::uint32_t(identity_digest.bytes[1])<<8)|(std::uint32_t(identity_digest.bytes[2])<<16)|
+diff --git a/src/runtime/multiplayer_session.cpp b/src/runtime/multiplayer_session.cpp
+index e712291..062d5f0 100644
+--- a/src/runtime/multiplayer_session.cpp
++++ b/src/runtime/multiplayer_session.cpp
+@@ -185,8 +185,9 @@ void GbaMultiplayerSession::run_until(std::uint64_t target) {
+             const bool ram_callback=e.ram_dispatch && e.cpu.R[15]>=0x02000000 && e.cpu.R[15]<0x04000000 &&
+                 (!e.ram_dispatch_filter || e.ram_dispatch_filter(e.cpu.R[15],(e.cpu.cpsr&CPSR_T_BIT) ? 1 : 0));
+             const bool generated = !e.program_dispatch && (!e.immediate_override || instance.immediate_override_is_observer) && !e.read_override &&
+-                !e.force_interp && !e.entry_hook && !e.bios_hook &&
+-                !e.bios_dispatch_hook &&
++                !e.force_interp && !e.entry_hook &&
++                // Native BIOS services (no BIOS image) only run at BIOS addresses.
++                ((!e.bios_hook && !e.bios_dispatch_hook) || instance.bus.native_bios()) &&
+                 !gba::g_rom_read16_override && !gba::g_rom_read32_override;
+             if (native_slices_ && generated && !ram_callback) {
+                 // No newly started cable transfer can complete within this
+@@ -316,6 +317,7 @@ bool GbaMultiplayerSession::load_state(std::span<const std::uint8_t> bytes, std:
+             auto& to = *staged->machines_[i];
+             const auto& from = *machines_[i];
+             to.bus.set_bios(from.bus.bios());
++            if (from.bus.native_bios()) to.bus.enable_native_bios();
+             if (from.bus.rom_ptr()) to.bus.set_rom(from.bus.rom_ptr(),from.bus.rom_size());
+             to.execution = from.execution; // retain trusted program callbacks
+             to.immediate_override_is_observer = from.immediate_override_is_observer;
+diff --git a/src/runtime/runtime.cpp b/src/runtime/runtime.cpp
+index 633d70c..e06d794 100644
+--- a/src/runtime/runtime.cpp
++++ b/src/runtime/runtime.cpp
+@@ -1567,7 +1567,8 @@ int run_game(int argc, char** argv, const RunOptions& opts) {
+     // Keep each validated byte snapshot through machine construction. Reopening
+     // the path would repeat I/O and hashing, and could load different bytes.
+     gba::GbaBios bios;
+-    const bool require_bios_image = has_recompiled_bios() || netplay;
++    // A build without linked BIOS code boots without an image, online too.
++    const bool require_bios_image = has_recompiled_bios();
+     std::vector<uint8_t> resolved_rom_bytes;
+     std::string resolved_rom_sha1;
+ 
+@@ -1692,12 +1693,19 @@ int run_game(int argc, char** argv, const RunOptions& opts) {
+ 
+     if (netplay) {
+         try {
++            const bool native_bios = !has_recompiled_bios();
+             if (!opts.netplay->run || !opts.builtin_rom_sha1 ||
+                 rom_sha1!=lower_ascii(opts.builtin_rom_sha1) ||
+-                bios.sha1_hex()!=gba::GbaBios::kExpectedSha1)
++                (!native_bios && bios.sha1_hex()!=gba::GbaBios::kExpectedSha1))
+                 throw std::runtime_error("netplay requires this build's original ROM and retail BIOS");
++            if (native_bios) {
++                // Every console boots straight into the cartridge; BIOS calls and
++                // interrupts are serviced natively, the same on every peer.
++                gba::bios_hle_set_mode(gba::BiosHleMode::Native);
++                gba::bios_hle_set_interrupts_enabled(true);
++            }
+             GbaNetplayBoot boot;
+-            boot.bios=&bios; boot.rom=&rom; boot.expected_rom_sha1=opts.builtin_rom_sha1;
++            boot.bios=native_bios ? nullptr : &bios; boot.rom=&rom; boot.expected_rom_sha1=opts.builtin_rom_sha1;
+             boot.rom_path=args.rom; boot.bios_path=args.bios;
+             boot.title=opts.builtin_game_name ? opts.builtin_game_name : "GBA";
+             boot.screen=args.screen; boot.scale=args.scale; boot.fullscreen=args.fullscreen;
+diff --git a/src/runtime/runtime_bus_bridge.cpp b/src/runtime/runtime_bus_bridge.cpp
+index 5c43a35..4cef001 100644
+--- a/src/runtime/runtime_bus_bridge.cpp
++++ b/src/runtime/runtime_bus_bridge.cpp
+@@ -1323,6 +1323,10 @@ void runtime_capture_timing_context(RuntimeTimingContext& out) {
+     out.event_budget = g_event_budget;
+ }
+ bool native_service_window_allowed() {
++    // A console booted without a BIOS image has no original routine to step
++    // through, so its native BIOS services run inside linked sessions too.
++    if (g_session_execution && g_active_bus && g_active_bus->native_bios())
++        return !g_runtime_shadow_tick;
+     return !g_session_execution && !g_runtime_shadow_tick;
+ }
+ void runtime_restore_timing_values(const RuntimeTimingContext& in) {
+diff --git a/tests/link/view_game_probe.cpp b/tests/link/view_game_probe.cpp
+index 1f4d780..97d67b7 100644
+--- a/tests/link/view_game_probe.cpp
++++ b/tests/link/view_game_probe.cpp
+@@ -3,6 +3,7 @@
+ #include "multiplayer_launch.h"
+ #include "multiplayer_session.h"
+ #include "gba_bios.h"
++#include "bios_hle.h"
+ #include "sha1.h"
+ #include "../../tools/link_session/netplay_probe.h"
+ #include <chrono>
+@@ -35,7 +36,12 @@ int main(int argc,char** argv) {
+         if(players<2 || players>4) throw std::runtime_error("players must be 2..4");
+         const auto rom_hash=gba::sha1(rom.data(),rom.size()).hex();
+         gba::GbaBios bios; std::string error;
+-        if (!bios.load_from_file(argv[2],gba::GbaBios::kExpectedSha1,&error)) throw std::runtime_error(error);
++        // BIOS "none": boot every console without a BIOS image (BIOS-free builds).
++        const bool native_bios=std::string(argv[2])=="none";
++        if (native_bios) {
++            gba::bios_hle_set_mode(gba::BiosHleMode::Native);
++            gba::bios_hle_set_interrupts_enabled(true);
++        } else if (!bios.load_from_file(argv[2],gba::GbaBios::kExpectedSha1,&error)) throw std::runtime_error(error);
+         GbaSessionConfig config;
+         config.links={{GbaLinkMedium::Cable,{}}};
+         for(unsigned id=0;id<players;++id) {
+@@ -44,7 +50,8 @@ int main(int argc,char** argv) {
+         }
+         GbaMultiplayerSession session(config); session.set_native_slices(true);
+         for (unsigned id=0;id<players;++id) {
+-            auto& m=session.machine(id); m.bus.set_bios(&bios); m.bus.set_rom(rom.data(),rom.size());
++            auto& m=session.machine(id); m.bus.set_bios(native_bios ? nullptr : &bios); m.bus.set_rom(rom.data(),rom.size());
++            if (native_bios) gba::bios_hle_native_boot(m.execution,m.bus,0x08000000u);
+             if(!prepare || std::getenv("GBA_LINK_PROBE_NET_SEAT")) m.ppu.set_rasterization_enabled(false);
+             if (game.setup_instance) game.setup_instance(m);
+         }
+diff --git a/tests/link/view_network_loopback.py b/tests/link/view_network_loopback.py
+index d423c8a..de9cfdb 100644
+--- a/tests/link/view_network_loopback.py
++++ b/tests/link/view_network_loopback.py
+@@ -22,7 +22,7 @@ p.add_argument("--min-fps", type=float, default=0)
+ p.add_argument("--input-delay", type=int, choices=range(2,21), default=6)
+ args = p.parse_args()
+ for name in ("exe", "rom", "bios", "state", "inputs"):
+-    if getattr(args, name):
++    if getattr(args, name) and getattr(args, name) != "none":  # BIOS "none": BIOS-free build
+         setattr(args, name, str(pathlib.Path(getattr(args, name)).resolve(strict=True)))
+ widths = [int(n) for n in args.widths.split(",")]
+ assert 2 <= len(widths) <= 4 and all(240 <= w <= 896 for w in widths)

@@ -14,15 +14,15 @@ Thanks for helping! This page covers setup, testing and the rules every change f
 ## Setup
 
 Follow [`recomp/README.md`](recomp/README.md): it builds the recompiler, recompiles your own ROM
-and BIOS into the git-ignored `generated/` folder, and builds `KAMO.exe`. Keep your ROM and BIOS
-outside the repository, or inside `local/` (git-ignored).
+into the git-ignored `generated/` folder, and builds `KAMO.exe`. Keep your ROM outside the
+repository, or inside `local/` (git-ignored). No BIOS is needed.
 
 On Windows, `tools/kamo_build.ps1` builds `KAMO` and `KAMOViewProbe` and stops the build if free
 memory runs low (the generated code needs about 2 GB per compile job).
 
 ## Tests
 
-Put the paths of your ROM and BIOS in `local/rom.ini` and `local/bios.ini` (`path = ...`), then:
+Put the path of your ROM in `local/rom.ini` (`path = ...`), then:
 
 ```powershell
 .\tools\kamo_test.ps1            # all tests
@@ -37,7 +37,15 @@ Put the paths of your ROM and BIOS in `local/rom.ini` and `local/bios.ini` (`pat
 | `subgames` | Four consoles play each multiplayer sub-game |
 | `peers4` | Four real `KAMO.exe` peers over loopback save identical paired archives |
 
-All runs are windowless and muted; their output stays outside the repository.
+All runs are windowless and muted; their output stays outside the repository. Every console
+boots without a BIOS, as players run it.
+
+## Releases
+
+Bump the version in `project()` of `recomp/CMakeLists.txt`, build, run the tests, then
+`tools/kamo_package.ps1` (needs Inno Setup 6). Attach the installer, the zip and
+`SHA256SUMS.txt` to the GitHub release: installed copies update from the latest release's
+`KAMO-Setup-<version>.exe`.
 
 ## Changes to GBARecomp and recomp-ui
 

@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.20)
 # KAMO on GBARecomp: the statically recompiled game linked to the GBARecomp runtime.
 #
-# Generated inputs come from the player's own ROM and BIOS and are never committed:
+# Generated inputs come from the player's own ROM and are never committed:
 #   KAMO_GENERATED_DIR   output of `gbarecomp build --rom <rom>` (its generated/ folder)
+# KAMO needs no BIOS: the runtime boots the cartridge directly and services BIOS calls
+# natively. KAMO_WITH_BIOS=ON links a recompiled retail BIOS instead (development only):
 #   KAMO_BIOS_DIR        output of `gba_recompile --bios <bios> --config bios/gba_bios.toml`
-project(KAMORecomp C CXX)
+project(KAMORecomp VERSION 0.3.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -18,7 +20,8 @@ set(KAMO_RECOMP_UI_DIR "${KAMO_ROOT}/external/recomp-ui" CACHE PATH "recomp-ui c
 if(NOT EXISTS "${KAMO_GENERATED_DIR}/dispatch_table.cpp")
     message(FATAL_ERROR "No recompiled game in ${KAMO_GENERATED_DIR}. See recomp/README.md.")
 endif()
-if(NOT EXISTS "${KAMO_BIOS_DIR}/bios_recompiled.cpp")
+option(KAMO_WITH_BIOS "Link a recompiled retail BIOS (players then need their BIOS dump)" OFF)
+if(KAMO_WITH_BIOS AND NOT EXISTS "${KAMO_BIOS_DIR}/bios_recompiled.cpp")
     message(FATAL_ERROR "No recompiled BIOS in ${KAMO_BIOS_DIR}. See recomp/README.md.")
 endif()
 
@@ -45,7 +48,12 @@ endfunction()
 kamo_apply_patches(gbarecomp "${KAMO_GBARECOMP_DIR}")
 kamo_apply_patches(recomp-ui "${KAMO_RECOMP_UI_DIR}")
 
-set(GBARECOMP_GENERATED_BIOS_DIR "${KAMO_BIOS_DIR}" CACHE PATH "" FORCE)
+if(KAMO_WITH_BIOS)
+    set(GBARECOMP_GENERATED_BIOS_DIR "${KAMO_BIOS_DIR}" CACHE PATH "" FORCE)
+else()
+    # An empty directory: GBARecomp then links no BIOS code and boots without a BIOS.
+    set(GBARECOMP_GENERATED_BIOS_DIR "${CMAKE_BINARY_DIR}/no-bios" CACHE PATH "" FORCE)
+endif()
 set(GBARECOMP_NETPLAY ON CACHE BOOL "" FORCE)
 set(GBARECOMP_RUNTIME_UI_ROOT "${KAMO_RECOMP_UI_DIR}" CACHE PATH "" FORCE)
 add_subdirectory("${KAMO_GBARECOMP_DIR}" gbarecomp EXCLUDE_FROM_ALL)
@@ -66,7 +74,17 @@ set(KAMO_INCLUDES
     "${KAMO_GBARECOMP_DIR}/src/runtime"
     "${KAMO_GBARECOMP_DIR}/src/gba")
 
+# KAMO.exe: the game, KAMO's own menu (ROM setup, Play alone / online, options) and updater.
 add_executable(KAMO src/main.cpp src/kamo_game.cpp)
+target_compile_definitions(KAMO PRIVATE KAMO_VERSION="${PROJECT_VERSION}")
+target_include_directories(KAMO PRIVATE
+    "${KAMO_RECOMP_UI_DIR}/src"
+    "${KAMO_RECOMP_UI_DIR}/src/third_party"
+    "${KAMO_RECOMP_UI_DIR}/src/third_party/imgui"
+    "${KAMO_RECOMP_UI_DIR}/src/third_party/imgui/backends")
+if(WIN32)
+    target_link_libraries(KAMO PRIVATE winhttp ws2_32 opengl32)
+endif()
 target_include_directories(KAMO PRIVATE ${KAMO_INCLUDES})
 target_link_gbarecomp_runtime_stack(KAMO kamo_generated gbarecomp_netplay)
 gbarecomp_target_netplay_identity(KAMO "${CMAKE_CURRENT_SOURCE_DIR}" "${KAMO_GENERATED_DIR}")
@@ -78,9 +96,17 @@ target_compile_definitions(KAMO PRIVATE KAMO_RECOMP=1)
 # KAMOViewProbe: runs 2-4 linked consoles headless from scripted input, optionally over
 # loopback netplay (see recomp/README.md). Built only on request.
 gbarecomp_target_netplay_view_probe(KAMO src/view_probe_adapter.cpp)
+# Added after the probe copies KAMO's sources: the menu belongs to the game only.
+target_sources(KAMO PRIVATE src/kamo_frontend.cpp src/kamo_settings.cpp src/kamo_update.cpp)
+if(WIN32)
+    # Icon and version information (KAMO_VERSION comes from project()).
+    configure_file(package/kamo.rc.in "${CMAKE_CURRENT_BINARY_DIR}/kamo.rc" @ONLY)
+    target_sources(KAMO PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/kamo.rc")
+endif()
 
-# The launcher window (ROM/BIOS pick, settings, controls) and the online lobby: create or
-# join public and private rooms on the lobby server, or play over LAN / direct IP.
+# recomp-ui provides Dear ImGui, the lobby backend (rooms on the lobby server, Discord sign-in)
+# and the in-game menu. KAMO draws its own menu with them (src/kamo_frontend.cpp) and does not
+# show recomp-ui's launcher window.
 # GBARecomp includes recomp_ui.cmake in its own directory scope; include it here as well so the
 # asset tables it defines are visible to this target.
 set(RECOMP_UI_ROOT "${KAMO_RECOMP_UI_DIR}")
@@ -105,3 +131,11 @@ foreach(kamo_target KAMO KAMOViewProbe)
         endif()
     endforeach()
 endforeach()
+
+# The menu's logo and window icon, next to the executable.
+add_custom_command(TARGET KAMO POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_FILE_DIR:KAMO>/assets/kamo"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${KAMO_ROOT}/assets/logo/kamo-logo.png"
+            "$<TARGET_FILE_DIR:KAMO>/assets/kamo/logo.png"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${KAMO_ROOT}/assets/icon/kamo-icon.png"
+            "$<TARGET_FILE_DIR:KAMO>/assets/kamo/icon.png")

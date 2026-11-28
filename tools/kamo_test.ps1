@@ -1,5 +1,5 @@
 # Standard test suite for the recompiled KAMO build. Prints one PASS/FAIL line per test.
-# Needs the ROM and BIOS paths in local/rom.ini and local/bios.ini ("path = ...").
+# Needs the ROM path in local/rom.ini ("path = ..."). KAMO boots without a BIOS.
 # All runs are windowless and muted. Output goes to -OutDir (default: %TEMP%\kamo-test-<time>).
 param(
     [string]$BuildDir = "build-recomp",
@@ -15,7 +15,7 @@ function Get-IniPath($file) {
     ($line -split '=', 2)[1].Trim()
 }
 $rom = Get-IniPath "local/rom.ini"
-$bios = Get-IniPath "local/bios.ini"
+$bios = "none"   # the view probe boots every console without a BIOS image
 $exe = Join-Path $root "$BuildDir\KAMO.exe"
 $probe = Join-Path $root "$BuildDir\KAMOViewProbe.exe"
 $py = "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe"
@@ -53,7 +53,7 @@ function New-MenuScript($path, $players, $until, $frames, $offset = 0) {
 
 if (Want "boot") {
     $log = "$OutDir\boot.log"
-    & $exe --rom $rom --bios $bios --frames 900 --no-window *> $log
+    & $exe --rom $rom --frames 900 --no-window *> $log
     $ok = $LASTEXITCODE -eq 0 -and (Select-String $log -Pattern "cpu_backend=static-recompiled" -Quiet)
     Report "boot" $ok "exit=$LASTEXITCODE $(First-Problem $log)"
 }
@@ -115,7 +115,7 @@ if (Want "peers4") {
     $ps = @()
     $session = Get-Random -Minimum 1000 -Maximum 99999
     foreach ($i in 0..3) {
-        $a = @("--rom", "`"$rom`"", "--bios", "`"$bios`"", "--frames", "900", "--netplay-players", "4",
+        $a = @("--rom", "`"$rom`"", "--frames", "900", "--netplay-players", "4",
                "--netplay-seat", "$i", "--netplay-session", "$session",
                "--netplay-bind", "127.0.0.1:$(7845 + $i)", "--netplay-checkpoint", "`"$dir\p$i.paired`"")
         if ($i -gt 0) { $a += @("--netplay-peer", "127.0.0.1:7845") }
