@@ -29,6 +29,8 @@ runtime used up to 0.1.x was retired in 0.2.x.
 - [x] Room chat, host crown, and a connection line in the room (0.4.0)
 - [x] Connection readout in the game (F) and an online log with 30 s summaries (0.4.0)
 - [x] Starting input delay sized for the host relay; a fixed delay is respected (0.4.0)
+- [x] Each player's Kirby colour, seen by everyone, and names above the Kirbys
+- [ ] The same colour for your Kirby when playing alone
 - [ ] Host relay over ICE (no port to open on the host), or the server relay, for 3-4 players
 - [ ] Write online progress back to each player's single-player save
 - [ ] LAN / direct-IP rooms with more than two seats
