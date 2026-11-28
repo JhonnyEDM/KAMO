@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <atomic>
 #include <cstdio>
+#include <cstdlib>
+#include <utility>
 #include <fstream>
 #include <mutex>
 #include <thread>
@@ -164,6 +166,122 @@ std::string sha256_file(const std::filesystem::path& path) {
     return hex;
 }
 
+// The folder of this KAMO.exe.
+std::filesystem::path app_dir() {
+    wchar_t exe[MAX_PATH];
+    const DWORD n = GetModuleFileNameW(nullptr, exe, MAX_PATH);
+    if (n == 0 || n >= MAX_PATH) return {};
+    return std::filesystem::path(exe).parent_path();
+}
+
+constexpr const wchar_t* kStaging = L".kamo-update";   // the unpacked zip, next to KAMO.exe
+constexpr const wchar_t* kOldSuffix = L".kamo-old";    // files a portable update replaced
+
+// Runs a program and waits for it (hidden window); returns its exit code, or -1.
+int run_and_wait(const std::wstring& exe, std::wstring command_line, const std::filesystem::path& dir) {
+    STARTUPINFOW si{};
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    si.wShowWindow = SW_HIDE;
+    PROCESS_INFORMATION pi{};
+    if (!CreateProcessW(exe.c_str(), command_line.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr,
+                        dir.wstring().c_str(), &si, &pi))
+        return -1;
+    WaitForSingleObject(pi.hProcess, 120000);
+    DWORD code = 1;
+    GetExitCodeProcess(pi.hProcess, &code);
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    return int(code);
+}
+
+// The downloaded zip is the one the release lists (size, SHA-256) and a zip at all.
+std::string check_zip(const std::filesystem::path& path, const UpdateInfo& info) {
+    std::error_code ec;
+    const auto size = std::filesystem::file_size(path, ec);
+    if (ec || size < 4) return "empty download";
+    if (info.zip_size && size != info.zip_size) return "wrong size";
+    char magic[2] = {};
+    std::ifstream(path, std::ios::binary).read(magic, 2);
+    if (magic[0] != 'P' || magic[1] != 'K') return "not a zip";
+    if (!info.zip_sha256.empty() && sha256_file(path) != info.zip_sha256) return "checksum mismatch";
+    return {};
+}
+
+// Unpacks the zip into .kamo-update next to KAMO.exe with Windows' own tar.exe, and checks it
+// holds a KAMO.exe.
+std::string unpack_zip(const std::filesystem::path& zip, std::filesystem::path& staged) {
+    const auto dir = app_dir();
+    if (dir.empty()) return "cannot find KAMO's folder";
+    staged = dir / kStaging;
+    std::error_code ec;
+    std::filesystem::remove_all(staged, ec);
+    if (!std::filesystem::create_directories(staged, ec) && ec) return "cannot write KAMO's folder";
+    wchar_t sys[MAX_PATH];
+    const UINT n = GetSystemDirectoryW(sys, MAX_PATH);
+    if (n == 0 || n >= MAX_PATH) return "cannot find tar.exe";
+    const std::wstring tar = std::wstring(sys) + L"\\tar.exe";
+    const int code = run_and_wait(tar, L"\"" + tar + L"\" -xf \"" + zip.wstring() + L"\" -C \"" + staged.wstring() + L"\"", dir);
+    if (code != 0 || !std::filesystem::exists(staged / L"KAMO.exe")) {
+        std::filesystem::remove_all(staged, ec);
+        return "cannot unpack the update";
+    }
+    return {};
+}
+
+// Swaps the staged files in: each existing file is renamed *.kamo-old (Windows lets a running
+// program and its DLLs be renamed), the new one moves into its place. On any failure the files
+// already swapped are put back. Then the new KAMO opens.
+bool apply_portable_update(const std::filesystem::path& staged) {
+    const auto dir = staged.parent_path();
+    std::error_code ec;
+    std::vector<std::pair<std::filesystem::path, bool>> done;  // target, had an old file
+    bool ok = true;
+    for (auto it = std::filesystem::recursive_directory_iterator(staged, ec);
+         ok && !ec && it != std::filesystem::recursive_directory_iterator(); it.increment(ec)) {
+        if (!it->is_regular_file()) continue;
+        const auto target = dir / std::filesystem::relative(it->path(), staged, ec);
+        auto old = target;
+        old += kOldSuffix;
+        std::filesystem::create_directories(target.parent_path(), ec);
+        std::filesystem::remove(old, ec);
+        const bool had = std::filesystem::exists(target);
+        if (had) {
+            std::filesystem::rename(target, old, ec);
+            if (ec) { ok = false; break; }
+        }
+        std::filesystem::rename(it->path(), target, ec);
+        if (ec) {
+            if (had) std::filesystem::rename(old, target, ec);
+            ok = false;
+            break;
+        }
+        done.emplace_back(target, had);
+    }
+    if (!ok) {
+        for (auto r = done.rbegin(); r != done.rend(); ++r) {
+            auto old = r->first;
+            old += kOldSuffix;
+            std::filesystem::remove(r->first, ec);
+            if (r->second) std::filesystem::rename(old, r->first, ec);
+        }
+        std::fprintf(stderr, "KAMO: portable update could not replace the files\n");
+        return false;
+    }
+    std::filesystem::remove_all(staged, ec);
+    const auto exe = dir / L"KAMO.exe";
+    STARTUPINFOW si{};
+    si.cb = sizeof(si);
+    PROCESS_INFORMATION pi{};
+    std::wstring line = L"\"" + exe.wstring() + L"\"";
+    if (!CreateProcessW(exe.wstring().c_str(), line.data(), nullptr, nullptr, FALSE, 0, nullptr,
+                        dir.wstring().c_str(), &si, &pi))
+        return false;
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    return true;
+}
+
 // The downloaded installer is the one the release lists: same size, same SHA-256 (when the
 // release publishes them) and a Windows program at all.
 std::string check_installer(const std::filesystem::path& path, const UpdateInfo& info) {
@@ -180,6 +298,27 @@ std::string check_installer(const std::filesystem::path& path, const UpdateInfo&
 #endif
 
 }  // namespace
+
+// After a portable update: the replaced files (*.kamo-old) and an unfinished staging folder.
+static void remove_update_leftovers() {
+#if defined(_WIN32)
+    const auto dir = app_dir();
+    if (dir.empty()) return;
+    std::error_code ec;
+    std::filesystem::remove_all(dir / kStaging, ec);
+    std::vector<std::filesystem::path> old;
+    for (auto it = std::filesystem::recursive_directory_iterator(dir, ec);
+         !ec && it != std::filesystem::recursive_directory_iterator(); it.increment(ec)) {
+        const auto name = it->path().filename().wstring();
+        const std::wstring suffix = kOldSuffix;
+        if (it->is_regular_file() && name.size() > suffix.size() &&
+            name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0)
+            old.push_back(it->path());
+        if (it.depth() > 3) it.disable_recursion_pending();
+    }
+    for (const auto& p : old) std::filesystem::remove(p, ec);
+#endif
+}
 
 bool version_newer(const std::string& candidate, const std::string& current) {
     const auto a = version_numbers(candidate), b = version_numbers(current);
@@ -198,6 +337,7 @@ struct Updater::Impl {
     UpdateInfo info;
     std::string error;
     std::filesystem::path installer;
+    std::filesystem::path staged;   // portable update: the unpacked zip, next to KAMO.exe
     bool download_failed = false;
     std::thread worker;
 };
@@ -208,6 +348,7 @@ Updater::~Updater() {
 
 void Updater::start(bool installed) {
     installed_ = installed;
+    if (!installed) remove_update_leftovers();
     if (impl_ && impl_->worker.joinable()) impl_->worker.detach();
     impl_ = std::make_shared<Impl>();
     impl_->worker = std::thread([impl = impl_] {
@@ -229,27 +370,40 @@ void Updater::start(bool installed) {
             const auto key = body.find("\"browser_download_url\"", at);
             const auto url = json_string(body, "browser_download_url", at, &end);
             if (url.empty()) break;
-            // Only an installer attached to this repository's own releases.
-            if (url.rfind(kDownloadPrefix, 0) == 0 &&
-                url.find("KAMO-Setup-") != std::string::npos && url.size() > 4 &&
-                url.compare(url.size() - 4, 4, ".exe") == 0) {
+            // GitHub lists an asset's size and digest before its download url.
+            const auto asset_size = json_number(body, "size", at, key);
+            std::string asset_sha;
+            const auto d = body.rfind("\"digest\"", key);
+            if (d != std::string::npos && d >= at) {
+                const auto digest = json_string(body, "digest", d);
+                if (digest.rfind("sha256:", 0) == 0)
+                    for (char c : digest.substr(7)) asset_sha += char(c >= 'A' && c <= 'F' ? c - 'A' + 'a' : c);
+            }
+            // Only files attached to this repository's own releases.
+            const bool ours = url.rfind(kDownloadPrefix, 0) == 0;
+            const auto ends = [&](const char* tail) {
+                const std::string t(tail);
+                return url.size() > t.size() && url.compare(url.size() - t.size(), t.size(), t) == 0;
+            };
+            if (ours && url.find("KAMO-Setup-") != std::string::npos && ends(".exe")) {
                 info.installer_url = url;
-                // GitHub lists an asset's size and digest before its download url.
-                info.size = json_number(body, "size", at, key);
-                info.sha256.clear();
-                const auto d = body.rfind("\"digest\"", key);
-                if (d != std::string::npos && d >= at) {
-                    const auto digest = json_string(body, "digest", d);
-                    if (digest.rfind("sha256:", 0) == 0)
-                        for (char c : digest.substr(7)) info.sha256 += char(c >= 'A' && c <= 'F' ? c - 'A' + 'a' : c);
-                }
+                info.size = asset_size;
+                info.sha256 = asset_sha;
+            } else if (ours && url.find("/KAMO-") != std::string::npos && ends("-Windows-x64.zip")) {
+                info.zip_url = url;
+                info.zip_size = asset_size;
+                info.zip_sha256 = asset_sha;
             }
             at = end;
         }
         std::lock_guard<std::mutex> g(impl->lock);
         impl->info = info;
-        impl->state = version_newer(info.version, KAMO_VERSION) ? State::Available : State::UpToDate;
-        std::fprintf(stderr, "KAMO: latest release %s, this is %s\n", info.version.c_str(), KAMO_VERSION);
+        // Developer switch: KAMO_UPDATE_PRETEND_VERSION=0.0.1 checks as that version, to try an
+        // update without publishing one.
+        const char* pretend = std::getenv("KAMO_UPDATE_PRETEND_VERSION");
+        const char* current = pretend && pretend[0] ? pretend : KAMO_VERSION;
+        impl->state = version_newer(info.version, current) ? State::Available : State::UpToDate;
+        std::fprintf(stderr, "KAMO: latest release %s, this is %s\n", info.version.c_str(), current);
 #else
         impl->state = State::UpToDate;
 #endif
@@ -257,6 +411,10 @@ void Updater::start(bool installed) {
 }
 
 Updater::State Updater::state() const { return impl_ ? impl_->state.load() : State::UpToDate; }
+bool Updater::can_self_update() const {
+    const auto i = info();
+    return installed_ ? !i.installer_url.empty() : !i.zip_url.empty();
+}
 bool Updater::busy() const {
     const auto s = state();
     return s == State::Downloading || s == State::Verifying || s == State::Ready;
@@ -281,7 +439,8 @@ std::string Updater::error() const {
 void Updater::download() {
     if (!impl_ || impl_->state != State::Available) return;
     const auto info = this->info();
-    if (info.installer_url.empty()) { open_release_page(); return; }
+    if (!can_self_update()) { open_release_page(); return; }
+    const bool portable = !installed_;
     {
         std::lock_guard<std::mutex> g(impl_->lock);
         impl_->download_failed = false;
@@ -290,25 +449,28 @@ void Updater::download() {
     impl_->progress = 0;
     impl_->state = State::Downloading;
     if (impl_->worker.joinable()) impl_->worker.join();
-    impl_->worker = std::thread([impl = impl_, info] {
+    impl_->worker = std::thread([impl = impl_, info, portable] {
 #if defined(_WIN32)
         std::error_code ec;
-        const auto path = std::filesystem::temp_directory_path(ec) / ("KAMO-Setup-" + info.version + ".exe");
+        const auto path = std::filesystem::temp_directory_path(ec) /
+            (portable ? "KAMO-" + info.version + "-Windows-x64.zip" : "KAMO-Setup-" + info.version + ".exe");
         std::string error;
         bool ok;
         {
             std::ofstream file(path, std::ios::binary | std::ios::trunc);
-            ok = file && http_get(info.installer_url, nullptr, &file, &impl->progress, &error);
+            ok = file && http_get(portable ? info.zip_url : info.installer_url, nullptr, &file, &impl->progress, &error);
             if (ok) { file.close(); ok = !file.fail(); }
         }
+        std::filesystem::path staged;
         if (ok) {
             impl->state = State::Verifying;
-            error = check_installer(path, info);
+            error = portable ? check_zip(path, info) : check_installer(path, info);
+            if (error.empty() && portable) error = unpack_zip(path, staged);
             ok = error.empty();
-            if (!ok) std::filesystem::remove(path, ec);  // never run a file that did not check out
+            if (!ok || portable) std::filesystem::remove(path, ec);  // never run a file that did not check out
         }
         std::lock_guard<std::mutex> g(impl->lock);
-        if (ok) { impl->installer = path; impl->state = State::Ready; }
+        if (ok) { impl->installer = path; impl->staged = staged; impl->state = State::Ready; }
         else {
             impl->error = error.empty() ? "download failed" : error;
             impl->download_failed = true;
@@ -328,6 +490,7 @@ void Updater::retry() {
 bool Updater::launch_installer() {
 #if defined(_WIN32)
     if (!impl_ || impl_->state != State::Ready) return false;
+    if (!impl_->staged.empty()) return apply_portable_update(impl_->staged);
     // The installer closes nothing by itself while KAMO runs; KAMO quits right after this.
     const auto params = L"/SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS";
     const auto result = ShellExecuteW(nullptr, L"open", impl_->installer.wstring().c_str(), params,

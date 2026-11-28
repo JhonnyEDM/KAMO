@@ -38,7 +38,7 @@ runtime used up to 0.1.x was retired in 0.2.x.
 ## 3. Release
 
 - [x] Windows build: installer and zip on GitHub Releases
-- [x] Automatic updates (installed copies), checked and verified each time the menu opens
+- [x] Automatic updates, checked and verified each time the menu opens: installed copies run the installer, portable copies swap their own files
 - [x] RecompLauncher support (`recomplauncher.json` in the zip)
 - [ ] macOS and Linux builds
 - [ ] 1.0
