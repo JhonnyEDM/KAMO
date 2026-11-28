@@ -1,0 +1,77 @@
+diff --git a/src/gba/gba_ppu.h b/src/gba/gba_ppu.h
+index d965cfb..698629c 100644
+--- a/src/gba/gba_ppu.h
++++ b/src/gba/gba_ppu.h
+@@ -79,6 +79,10 @@ public:
+         virtual void restored() noexcept = 0;
+     };
+     void set_presentation_observer(PresentationObserver* observer) { presentation_ = observer; }
++    // Presentation only: draw OBJ palette `bank` (0..15) with these 16 colours (BGR555)
++    // instead of palette RAM; nullptr clears it. Host configuration, never serialized:
++    // guest memory, save states and state hashes are untouched.
++    void set_obj_palette_override(unsigned bank, const uint16_t* colors);
+     PresentationObserver* presentation_observer() const { return presentation_; }
+     // Timing-only canonical consoles retain all PPU events/affine state and
+     // invoke their observer, but keep native pixel buffers zero. Every console
+@@ -236,6 +240,12 @@ private:
+     HighResolutionAffineProvider high_resolution_provider_ = nullptr;
+     PresentationObserver* presentation_ = nullptr; // borrowed; not serialized
+     bool rasterization_enabled_ = true; // host configuration, not serialized
++    // set_obj_palette_override: the banks in the mask are drawn from obj_override_ through a
++    // per-scanline copy of palette RAM (host configuration, not serialized).
++    const uint8_t* presentation_palette(const uint8_t* pal);
++    uint16_t obj_override_mask_ = 0;
++    std::array<uint16_t, 256> obj_override_{};
++    std::array<uint8_t, 0x400> pal_scratch_{};
+     uint32_t scanline_        = 0;   // 0..227
+     uint32_t dot_in_scanline_ = 0;   // 0..307 (in dots, not cycles)
+     uint32_t cycle_in_dot_    = 0;   // 0..3
+diff --git a/src/gba/gba_ppu.cpp b/src/gba/gba_ppu.cpp
+index c84d5ae..ee9761f 100644
+--- a/src/gba/gba_ppu.cpp
++++ b/src/gba/gba_ppu.cpp
+@@ -3033,6 +3033,7 @@ void GbaPpu::render_scanline(uint32_t y,
+                              , GbaDrawMemory* draw_memory
+ #endif
+                              ) {
++    pal = presentation_palette(pal);
+     if (high_resolution_) {
+         high_resolution_->configure(render_width(), render_height());
+         if (y == 0) high_resolution_->begin_frame();
+@@ -3157,6 +3158,27 @@ void GbaPpu::note_affine_reference_write(unsigned bg, bool y_axis) {
+     else state.reload_x = true;
+ }
+ 
++void GbaPpu::set_obj_palette_override(unsigned bank, const uint16_t* colors) {
++    if (bank > 15) return;
++    if (!colors) { obj_override_mask_ = uint16_t(obj_override_mask_ & ~(1u << bank)); return; }
++    std::memcpy(&obj_override_[bank * 16], colors, 16 * sizeof(uint16_t));
++    obj_override_mask_ = uint16_t(obj_override_mask_ | (1u << bank));
++}
++
++const uint8_t* GbaPpu::presentation_palette(const uint8_t* pal) {
++    if (!obj_override_mask_ || !pal) return pal;
++    std::memcpy(pal_scratch_.data(), pal, pal_scratch_.size());
++    for (unsigned bank = 0; bank < 16; ++bank) {
++        if (!(obj_override_mask_ & (1u << bank))) continue;
++        for (unsigned i = 1; i < 16; ++i) {  // entry 0 stays transparent
++            const uint16_t c = obj_override_[bank * 16 + i];
++            pal_scratch_[0x200 + bank * 32 + i * 2] = uint8_t(c & 0xFF);
++            pal_scratch_[0x200 + bank * 32 + i * 2 + 1] = uint8_t(c >> 8);
++        }
++    }
++    return pal_scratch_.data();
++}
++
+ void GbaPpu::render_presentation_scanline(const GbaPpu& source, uint32_t y,
+                                           uint16_t dispcnt, const uint8_t* io,
+                                           const uint8_t* vram, const uint8_t* oam,
+@@ -3173,7 +3195,7 @@ void GbaPpu::latch_framebuffer(uint16_t dispcnt,
+ #if defined(GBARECOMP_NATIVE_DRAW_JOBS)
+     invalidate_native_draw();
+ #endif
+-    render(work_fb_.data(), dispcnt, io, vram, oam, pal);
++    render(work_fb_.data(), dispcnt, io, vram, oam, presentation_palette(pal));
+     mark_framebuffer_latched();
+ }
+ 

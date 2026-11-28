@@ -96,6 +96,24 @@ The lobby server picks the route when the host starts:
 The investigation behind this is in `.claude/issues/three-player-online/` (`ISSUE.md`,
 `ANALYSIS.md`), with the three-window test `test3p.ps1`.
 
+## Player colours and names
+
+Each player picks a colour in **Options > Your Kirby**; in the match every PC draws that player's
+Kirby in it and shows the players' names above their Kirbys.
+
+- The game draws cable port N's Kirby with OBJ palette bank N and tiles `64*N .. 64*N+63`. Before
+  each presented frame, KAMO reads the local console's palette RAM and OAM, redraws banks 0-3
+  through the PPU's presentation-only palette override
+  (`recomp/patches/gbarecomp-0005-obj-palette-override.patch`) and places the names from those
+  sprites (`recomp/src/kamo_kirby.cpp`). Only banks that look like a Kirby palette are touched.
+- Guest memory, save states and the netplay state never change, so colours can differ between
+  PCs without a desync.
+- In the room each player shares their colour as a chat line tagged `#kamo-color`, which KAMO
+  hides; it is sent again whenever the player count changes, since a newcomer's chat starts
+  empty. The room's player list shows each colour.
+- Lobby seat `s` plays cable port `seat_machine[s]`. For testing several windows on one PC,
+  `KAMO_KIRBY_COLOR=RRGGBB` gives one window its own colour.
+
 ## Diagnosing a match
 
 - **In the game**, **F** shows the FPS and, online, a line with a quality dot (green, yellow,

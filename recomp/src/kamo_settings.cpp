@@ -37,6 +37,8 @@ Settings load_settings(const std::filesystem::path& dir) {
         else if (key == "fullscreen") s.fullscreen = value == "1";
         else if (key == "volume") s.volume = std::clamp(to_int(value, 100), 0, 100);
         else if (key == "input_delay") s.input_delay = std::clamp(to_int(value, 0), 0, 10);
+        else if (key == "kirby_color") s.kirby_color = value.size() == 6 ? value : "";
+        else if (key == "show_names") s.show_names = value != "0";
     }
     return s;
 }
@@ -48,7 +50,9 @@ void save_settings(const std::filesystem::path& dir, const Settings& s) {
         << "scale = " << s.scale << "\n"
         << "fullscreen = " << (s.fullscreen ? 1 : 0) << "\n"
         << "volume = " << s.volume << "\n"
-        << "input_delay = " << s.input_delay << "\n";
+        << "input_delay = " << s.input_delay << "\n"
+        << "kirby_color = " << s.kirby_color << "\n"
+        << "show_names = " << (s.show_names ? 1 : 0) << "\n";
 }
 
 std::filesystem::path load_rom_path(const std::filesystem::path& dir) {

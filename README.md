@@ -77,6 +77,9 @@ the installer's size and SHA-256 against the release, and updates itself. It als
 In the room, players can **chat**, the host wears a **crown**, and a **Connection** line says
 whether the host's port is open and which players reach it.
 
+**Your Kirby.** Pick your Kirby's colour in **Options > Your Kirby**: every player in the match sees
+your Kirby in it, with your name above it (names can be turned off there).
+
 **Input lag.** With **Automatic** (the default) the match starts from the room's pings and then
 adjusts the delay by itself while you play. A number in **Options > Online** fixes it instead:
 lower responds sooner, higher stutters less. Press **F** while playing online to see the
