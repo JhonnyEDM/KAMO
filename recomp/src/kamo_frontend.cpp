@@ -13,6 +13,7 @@
 #include <ctime>
 #include <fstream>
 #include <filesystem>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -31,6 +32,7 @@
 #include "recomp_net/lobby_client.h"
 
 #include "kamo_game.h"
+#include "kamo_kirby.h"
 #include "kamo_settings.h"
 #include "kamo_update.h"
 
@@ -382,6 +384,9 @@ struct Front {
     int logged_count = -1;      // last player count written to the online log
     bool logged_in_room = false;
     char chat_line[200] = {};
+    std::map<std::string, std::uint32_t> kirby_colors;  // the room's colours, by display name
+    int color_sent_count = -1;                          // player count when ours was last sent
+    std::uint32_t color_sent = 0;
     std::uint32_t chat_seen = 0;   // seq of the newest chat line shown, to scroll to new ones
 };
 
@@ -758,6 +763,8 @@ void leave_room(Front& f) {
     f.create_sent = false;
     f.logged_in_room = false;
     f.logged_count = -1;
+    f.kirby_colors.clear();
+    f.color_sent_count = -1;
     f.relay_seen.clear();
 }
 
@@ -1265,6 +1272,70 @@ void crown(float px = 2, float line_h = 0) {
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", T("Anfitrión", "Host"));
 }
 
+// ---- Kirby colours --------------------------------------------------------------------------
+// Each player's Kirby colour travels to the room as a tagged chat line (KAMO hides them). Every
+// player sends theirs on entering and again whenever the player count changes, since a player
+// who joins later starts with an empty chat ring.
+constexpr const char* kColorTag = "#kamo-color ";
+
+struct ColorChoice { const char* es; const char* en; std::uint32_t rgb; };
+const ColorChoice kColorChoices[] = {
+    {"Original", "Original", kOriginalColor}, {"Azul", "Blue", 0x3A7BFF},   {"Morado", "Purple", 0x9B59FF},
+    {"Cian", "Cyan", 0x22D3EE},              {"Lima", "Lime", 0x9BE22D},   {"Naranja", "Orange", 0xFF8A1E},
+    {"Dorado", "Gold", 0xFFC83A},            {"Vino", "Wine", 0xA3133A},   {"Negro", "Black", 0x2A2A35},
+    {"Blanco", "White", 0xF2F2F2},           {"Gris", "Grey", 0x8C8C9A},   {"Chicle", "Bubblegum", 0xFF5FA8},
+};
+
+void read_room_colors(Front& f) {
+    const auto* np = f.np;
+    if (!np->chat_count || !np->chat_get) return;
+    const size_t tag = std::strlen(kColorTag);
+    for (int i = 0, n = np->chat_count(np->ctx); i < n; ++i) {
+        RecompLauncherCNetplayChatMessage m{};
+        if (!np->chat_get(np->ctx, i, &m) || !m.from[0]) continue;
+        if (std::strncmp(m.text, kColorTag, tag) == 0) f.kirby_colors[m.from] = parse_kirby_color(m.text + tag);
+    }
+}
+
+void share_my_color(Front& f, int count) {
+    const auto* np = f.np;
+    const std::uint32_t mine = parse_kirby_color(f.settings.kirby_color);
+    if (!np->chat_send || (count == f.color_sent_count && mine == f.color_sent)) return;
+    f.color_sent_count = count;
+    f.color_sent = mine;
+    np->chat_send(np->ctx, (std::string(kColorTag) + kirby_color_text(mine)).c_str());
+}
+
+// A small colour swatch at the cursor, on a line of the frame height.
+void color_swatch(std::uint32_t rgb, float side = 14) {
+    const ImVec2 at = ImGui::GetCursorScreenPos();
+    const float line = ImGui::GetFrameHeight();
+    const ImVec2 a(std::floor(at.x), std::floor(at.y + (line - side) / 2));
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    dl->AddRectFilled(a, ImVec2(a.x + side, a.y + side), IM_COL32((rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255, 255), 3);
+    dl->AddRect(a, ImVec2(a.x + side, a.y + side), IM_COL32(255, 249, 223, 160), 3, 0, 1);
+    ImGui::Dummy(ImVec2(side, line));
+}
+
+// The puffball of the update bar, drawn in `rgb` (kOriginalColor keeps its pink): the preview
+// of "Your Kirby" in Options.
+void draw_puff_colored(ImDrawList* dl, ImVec2 at, float px, int frame, std::uint32_t rgb) {
+    for (int y = 0; y < kPuffSize; ++y)
+        for (int x = 0; x < kPuffSize; ++x) {
+            const char k = kPuff[frame][y][x];
+            ImU32 c = puff_color(k);
+            if (!c) continue;
+            if (rgb != kOriginalColor && (k == 'p' || k == 'l' || k == 'c' || k == 'r' || k == 'R')) {
+                const float r = ((rgb >> 16) & 255) / 255.0f, g = ((rgb >> 8) & 255) / 255.0f, b = (rgb & 255) / 255.0f;
+                const float shade = k == 'l' ? 1.35f : k == 'c' ? 0.8f : k == 'r' ? 0.62f : k == 'R' ? 0.45f : 1.0f;
+                auto ch = [&](float v) { return int(std::clamp(v * shade + (k == 'l' ? 0.12f : 0.0f), 0.0f, 1.0f) * 255); };
+                c = IM_COL32(ch(r), ch(g), ch(b), 255);
+            }
+            const ImVec2 a(std::floor(at.x + x * px), std::floor(at.y + y * px));
+            dl->AddRectFilled(a, ImVec2(a.x + px, a.y + px), c);
+        }
+}
+
 // The room's chat: every seated player sees every line. Lines come back from the server (or the
 // LAN host), so a sent line appears once the room has it.
 void draw_chat(Front& f, const std::string& host_name, float height) {
@@ -1281,6 +1352,7 @@ void draw_chat(Front& f, const std::string& host_name, float height) {
         RecompLauncherCNetplayChatMessage m{};
         if (!np->chat_get(np->ctx, i, &m)) continue;
         newest = m.seq;
+        if (std::strncmp(m.text, kColorTag, std::strlen(kColorTag)) == 0) continue;  // shared colours
         ++shown;
         ImGui::PushTextWrapPos(0);
         if (m.is_system || !m.from[0]) {
@@ -1385,6 +1457,8 @@ void screen_room(Front& f) {
     }
     f.create_sent = false;
     f.waiting_since = 0;
+    share_my_color(f, np->member_count(np->ctx));
+    read_room_colors(f);
     if (np->launch_pending(np->ctx)) {
         RecompLauncherCNetplayLaunch launch{};
         if (np->fill_launch(np->ctx, &launch) && launch.enabled) {
@@ -1408,6 +1482,26 @@ void screen_room(Front& f) {
                     }
                 }
                 f.options->netplay->log_line = [](const std::string& line) { online_log("%s", line.c_str()); };
+                {   // Names and colours by cable port: lobby seat s plays cable port seat_machine[s].
+                    KirbyLooks looks;
+                    looks.show_names = f.settings.show_names;
+                    looks.colors.fill(kOriginalColor);
+                    auto& n = *f.options->netplay;
+                    std::string summary;
+                    for (int s = 0, members = np->member_count(np->ctx); s < members && s < int(n.player_count); ++s) {
+                        RecompLauncherCNetplayMember m{};
+                        if (!np->member_get(np->ctx, s, &m) || m.is_spectator) continue;
+                        const unsigned port = n.seat_machine[s];
+                        if (port >= unsigned(kKirbyPorts)) continue;
+                        looks.names[port] = std::string(m.display_name).substr(0, 16);
+                        if (m.is_local) looks.colors[port] = parse_kirby_color(f.settings.kirby_color);
+                        else if (const auto it = f.kirby_colors.find(m.display_name); it != f.kirby_colors.end())
+                            looks.colors[port] = it->second;
+                        summary += " P" + std::to_string(port + 1) + "=" + m.display_name + "/" + kirby_color_text(looks.colors[port]);
+                    }
+                    install_kirby_looks(n, looks);
+                    online_log("kirby looks:%s (names %s)", summary.c_str(), looks.show_names ? "on" : "off");
+                }
                 const auto& l = *f.options->netplay;
                 online_log("launch: %u players, seat %u, route %s, bind %s, peer %s, delay %u, %s%s",
                            l.player_count, l.local_seat, transport_name(gbarecomp::gba_netplay_transport(l)),
@@ -1473,6 +1567,12 @@ void screen_room(Front& f) {
                 host_name = m.display_name;
                 crown();
                 ImGui::SameLine(0, 6);
+            }
+            {
+                std::uint32_t color = kOriginalColor;
+                if (m.is_local) color = parse_kirby_color(f.settings.kirby_color);
+                else if (const auto it = f.kirby_colors.find(m.display_name); it != f.kirby_colors.end()) color = it->second;
+                if (color != kOriginalColor) { color_swatch(color); ImGui::SameLine(0, 6); }
             }
             ImGui::AlignTextToFramePadding();
             ImGui::Text("%s%s", m.display_name, m.is_local ? T("  - tú", "  - you") : "");
@@ -1651,6 +1751,45 @@ void screen_options(Front& f) {
             }
             ImGui::EndTabItem();
         }
+        if (ImGui::BeginTabItem(T("Tu Kirby", "Your Kirby"))) {
+            ImGui::Spacing();
+            ImGui::TextWrapped("%s", T("Tu color en las partidas online: todos los jugadores ven a tu Kirby así. "
+                                       "Cada uno elige el suyo.",
+                                       "Your colour in online matches: every player sees your Kirby like this. "
+                                       "Everyone picks their own."));
+            const std::uint32_t current = parse_kirby_color(f.settings.kirby_color);
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+            const ImVec2 preview = ImGui::GetCursorScreenPos();
+            draw_puff_colored(dl, ImVec2(preview.x + 8, preview.y + 4), 5, (SDL_GetTicks() / 400) % 2, current);
+            ImGui::Dummy(ImVec2(100, 88));
+            ImGui::SameLine();
+            ImGui::BeginGroup();
+            int column = 0;
+            for (const auto& choice : kColorChoices) {
+                const bool selected = choice.rgb == current;
+                ImGui::PushID(choice.en);
+                const ImVec2 at = ImGui::GetCursorScreenPos();
+                if (ImGui::InvisibleButton("##c", ImVec2(116, 34))) {
+                    f.settings.kirby_color = choice.rgb == kOriginalColor ? "" : kirby_color_text(choice.rgb);
+                    changed = true;
+                }
+                const bool hovered = ImGui::IsItemHovered();
+                dl->AddRectFilled(at, ImVec2(at.x + 116, at.y + 34), ImGui::ColorConvertFloat4ToU32(hovered ? kSoftHover : kSoft), 6);
+                if (selected) dl->AddRect(at, ImVec2(at.x + 116, at.y + 34), IM_COL32(255, 227, 109, 255), 6, 0, 2);
+                const std::uint32_t sw = choice.rgb == kOriginalColor ? 0xFF8CC8 : choice.rgb;
+                dl->AddRectFilled(ImVec2(at.x + 8, at.y + 9), ImVec2(at.x + 24, at.y + 25),
+                                  IM_COL32((sw >> 16) & 255, (sw >> 8) & 255, sw & 255, 255), 3);
+                dl->AddText(ImVec2(at.x + 32, at.y + 6), ImGui::ColorConvertFloat4ToU32(kInk), T(choice.es, choice.en));
+                ImGui::PopID();
+                if (++column % 4) ImGui::SameLine();
+            }
+            ImGui::EndGroup();
+            ImGui::Spacing();
+            if (ImGui::Checkbox(T("Mostrar los nombres sobre los Kirby (online)", "Show names above the Kirbys (online)"),
+                                &f.settings.show_names))
+                changed = true;
+            ImGui::EndTabItem();
+        }
         if (ImGui::BeginTabItem(T("Juego", "Game"))) {
             ImGui::Spacing();
             ImGui::TextUnformatted(T("Tu ROM:", "Your ROM:"));
@@ -1677,6 +1816,10 @@ bool run_frontend(std::vector<std::string>& args, gbarecomp::RunOptions& options
     f.dir = dir;
     f.options = &options;
     f.settings = load_settings(dir);
+    // Developer switch: KAMO_KIRBY_COLOR=RRGGBB gives this window its own Kirby colour (several
+    // windows of one PC share kamo.ini). Not saved unless Options changes it.
+    if (const char* kc = SDL_getenv("KAMO_KIRBY_COLOR"); kc && kc[0])
+        f.settings.kirby_color = std::strlen(kc) == 6 ? kc : "";
     load_keys(dir, f.keys);
     std::snprintf(f.name, sizeof(f.name), "%s", f.settings.name.c_str());
     f.rom = load_rom_path(dir);

@@ -101,7 +101,7 @@ target_compile_definitions(KAMO PRIVATE KAMO_RECOMP=1)
 # loopback netplay (see recomp/README.md). Built only on request.
 gbarecomp_target_netplay_view_probe(KAMO src/view_probe_adapter.cpp)
 # Added after the probe copies KAMO's sources: the menu belongs to the game only.
-target_sources(KAMO PRIVATE src/kamo_frontend.cpp src/kamo_settings.cpp src/kamo_update.cpp)
+target_sources(KAMO PRIVATE src/kamo_frontend.cpp src/kamo_settings.cpp src/kamo_update.cpp src/kamo_kirby.cpp)
 if(WIN32)
     # Icon and version information (KAMO_VERSION comes from project()).
     configure_file(package/kamo.rc.in "${CMAKE_CURRENT_BINARY_DIR}/kamo.rc" @ONLY)

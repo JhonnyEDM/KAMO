@@ -69,15 +69,29 @@ index 3210c20..63c2522 100644
  int HostWindow::fast_forward_multiplier() const { return 4; }
  
 diff --git a/src/runtime/multiplayer_launch.h b/src/runtime/multiplayer_launch.h
-index 08bb242..d005755 100644
+index 08bb242..78c18a8 100644
 --- a/src/runtime/multiplayer_launch.h
 +++ b/src/runtime/multiplayer_launch.h
-@@ -62,6 +62,8 @@ struct GbaNetplayLaunch {
+@@ -13,6 +13,7 @@
+ namespace gba { class GbaBios; }
+ namespace gbarecomp {
+ struct GbaInstance;
++class HostOverlay;
+ struct GbaNetplayLaunch;
+ 
+ // The ordinary runtime resolves and verifies assets once, then hands them to
+@@ -62,6 +63,14 @@ struct GbaNetplayLaunch {
      std::string program_id, build_identity, content_sha256;
      void (*setup_instance)(GbaInstance&)=nullptr;
      std::function<void()> pump_lobby;
 +    // Optional: a line for the launcher's own log, e.g. the 30 s connection summary.
 +    std::function<void(const std::string&)> log_line;
++    // Optional: called with the local console right before each presented frame. It may
++    // read that console's memory and set presentation-only state on its PPU (palette
++    // overrides); it must never change guest state.
++    std::function<void(GbaInstance&)> before_present;
++    // Optional: host overlay drawn over the game image (labels, markers).
++    void (*host_overlay)(HostOverlay*)=nullptr;
      // Installed by make_gba_netplay_launch. This dependency boundary keeps
      // single-player games free of a recomp-net link requirement.
      int (*run)(const GbaNetplayLaunch&,const GbaNetplayBoot&)=nullptr;
@@ -109,10 +123,17 @@ index 18e1457..777d5e1 100644
      try {
          rnet_session_pump(session_);
 diff --git a/src/runtime/multiplayer_runner.cpp b/src/runtime/multiplayer_runner.cpp
-index 63c9d54..f861e2e 100644
+index 63c9d54..155dd08 100644
 --- a/src/runtime/multiplayer_runner.cpp
 +++ b/src/runtime/multiplayer_runner.cpp
-@@ -133,6 +133,44 @@ int run(const GbaNetplayLaunch& launch,const GbaNetplayBoot& boot) {
+@@ -127,12 +127,51 @@ int run(const GbaNetplayLaunch& launch,const GbaNetplayBoot& boot) {
+             boot.linear_filter,boot.sharp_filter,adaptive,true,boot.audio_rate))
+         throw std::runtime_error("cannot open netplay window");
+     window.load_input_config(boot.config_directory.string().c_str(),false);
++    if (launch.host_overlay) window.set_host_overlay(launch.host_overlay);
+     window.set_fullscreen(boot.fullscreen); window.set_volume(boot.volume);
+     window.set_fps_readout(boot.show_fps);
+     std::uint16_t buttons=0;
      match.sample_local=[&](std::uint32_t) { return buttons; };
      GbaNetplayPacer pacer;
      GbaNetplayOutput output;
@@ -157,7 +178,7 @@ index 63c9d54..f861e2e 100644
      std::string previous_title;
      bool closing=false;
      while (true) {
-@@ -163,11 +201,58 @@ int run(const GbaNetplayLaunch& launch,const GbaNetplayBoot& boot) {
+@@ -163,11 +202,58 @@ int run(const GbaNetplayLaunch& launch,const GbaNetplayBoot& boot) {
          // simulation. A save hotkey requests a confirmed paired save-and-leave.
          const auto now=GbaNetplayPacer::Clock::now();
          const auto step=match.poll(pacer.ready(now));
@@ -217,3 +238,11 @@ index 63c9d54..f861e2e 100644
              std::string error;
              if (!match.store_checkpoint(checkpoint_absolute,&error))
                  throw std::runtime_error(error);
+@@ -195,6 +281,7 @@ int run(const GbaNetplayLaunch& launch,const GbaNetplayBoot& boot) {
+         if (match.take_output(output)) {
+             // Canonical consoles keep no raster. After a mid-frame restore,
+             // wait for a complete private presentation, while audio advances.
++            if (launch.before_present) launch.before_present(simulation.input_machine(launch.local_seat));
+             if (const auto* pixels=presentation->pixels()) {
+                 const unsigned width=presentation->logical_width();
+                 if (!window.set_surface_size(width,160))

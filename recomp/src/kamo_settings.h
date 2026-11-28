@@ -18,6 +18,8 @@ struct Settings {
     bool fullscreen = false;
     int volume = 100;          // 0..100
     int input_delay = 0;       // online input delay in frames; 0 = automatic from the ping
+    std::string kirby_color;   // online: this player's Kirby colour, "RRGGBB"; empty = original
+    bool show_names = true;    // online: players' names above their Kirbys
 };
 
 Settings load_settings(const std::filesystem::path& dir);
