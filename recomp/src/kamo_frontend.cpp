@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -261,6 +262,8 @@ struct Front {
     bool create_sent = false;   // a create is on its way: the room exists before in_lobby says so
     bool continue_saved = false;
     std::string room_title;
+    char chat_line[200] = {};
+    std::uint32_t chat_seen = 0;   // seq of the newest chat line shown, to scroll to new ones
 };
 
 void note(Front& f, std::string text, bool bad = false) { f.message = std::move(text); f.message_bad = bad; }
@@ -838,6 +841,94 @@ void screen_create(Front& f) {
     if (soft_button(T("Volver", "Back"), 140)) { f.message.clear(); f.screen = Screen::Online; }
 }
 
+// ---- room: host crown and chat ----------------------------------------------------------
+// A small pixel crown, drawn here (no game art), marks the room's host.
+constexpr int kCrownW = 9, kCrownH = 7;
+const char* const kCrown[kCrownH] = {
+    "y...y...y",
+    "yy.yyy.yy",
+    "yyyyyyyyy",
+    "yryybyyry",
+    "yyyyyyyyy",
+    "ooooooooo",
+    ".........",
+};
+
+// Draws the crown at the cursor and moves past it, centred on a line of `line_h` pixels.
+void crown(float px = 2, float line_h = 0) {
+    if (line_h <= 0) line_h = ImGui::GetFrameHeight();
+    const ImVec2 at = ImGui::GetCursorScreenPos();
+    const float w = kCrownW * px, h = (kCrownH - 1) * px;
+    const float top = std::floor(at.y + (line_h - h) * 0.5f);
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    for (int y = 0; y < kCrownH; ++y)
+        for (int x = 0; x < kCrownW; ++x) {
+            ImU32 c = 0;
+            switch (kCrown[y][x]) {
+            case 'y': c = IM_COL32(255, 196, 40, 255); break;
+            case 'o': c = IM_COL32(214, 132, 16, 255); break;
+            case 'r': c = IM_COL32(226, 40, 72, 255); break;
+            case 'b': c = IM_COL32(70, 150, 255, 255); break;
+            default: continue;
+            }
+            const ImVec2 a(std::floor(at.x + x * px), top + y * px);
+            dl->AddRectFilled(a, ImVec2(a.x + px, a.y + px), c);
+        }
+    // A glint that comes and goes on the middle point.
+    if ((SDL_GetTicks() / 300) % 7 == 0)
+        dl->AddRectFilled(ImVec2(std::floor(at.x + 4 * px), top - px), ImVec2(std::floor(at.x + 5 * px), top), IM_COL32(255, 255, 255, 255));
+    ImGui::Dummy(ImVec2(w, line_h));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", T("Anfitrión", "Host"));
+}
+
+// The room's chat: every seated player sees every line. Lines come back from the server (or the
+// LAN host), so a sent line appears once the room has it.
+void draw_chat(Front& f, const std::string& host_name, float height) {
+    const auto* np = f.np;
+    ImGui::BeginChild("chat", ImVec2(0, height), ImGuiChildFlags_AlwaysUseWindowPadding);
+    ImGui::TextColored(kPinkActive, "%s", T("Chat de la sala", "Room chat"));
+    const float input_h = ImGui::GetFrameHeight();
+    ImGui::BeginChild("lines", ImVec2(0, ImGui::GetContentRegionAvail().y - input_h - ImGui::GetStyle().ItemSpacing.y));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 4));
+    const int n = np->chat_count(np->ctx);
+    std::uint32_t newest = 0;
+    int shown = 0;
+    for (int i = 0; i < n; ++i) {
+        RecompLauncherCNetplayChatMessage m{};
+        if (!np->chat_get(np->ctx, i, &m)) continue;
+        newest = m.seq;
+        ++shown;
+        ImGui::PushTextWrapPos(0);
+        if (m.is_system || !m.from[0]) {
+            ImGui::TextDisabled("%s", m.text);
+        } else {
+            const float line = ImGui::GetTextLineHeight();
+            if (!host_name.empty() && host_name == m.from) { crown(2, line); ImGui::SameLine(0, 4); }
+            ImGui::TextColored(m.is_local ? kPinkActive : kInk, "%s:", m.from);
+            ImGui::SameLine(0, 6);
+            ImGui::TextUnformatted(m.text);
+        }
+        ImGui::PopTextWrapPos();
+    }
+    if (!shown) ImGui::TextDisabled("%s", T("¡Saluda a tu equipo!", "Say hi to your team!"));
+    if (newest != f.chat_seen) { ImGui::SetScrollHereY(1.0f); f.chat_seen = newest; }
+    ImGui::PopStyleVar();
+    ImGui::EndChild();
+
+    const float send_w = 90;
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - send_w - ImGui::GetStyle().ItemSpacing.x);
+    bool send = ImGui::InputTextWithHint("##chat", T("Escribe un mensaje...", "Type a message..."), f.chat_line,
+                                         sizeof(f.chat_line), ImGuiInputTextFlags_EnterReturnsTrue);
+    if (send) ImGui::SetKeyboardFocusHere(-1);  // keep typing after Enter
+    ImGui::SameLine();
+    send |= button(T("Enviar", "Send"), send_w, f.chat_line[0] != 0);
+    if (send && f.chat_line[0]) {
+        if (np->chat_send(np->ctx, f.chat_line) == 0) f.chat_line[0] = '\0';
+        else note(f, T("No se pudo enviar el mensaje.", "The message could not be sent."), true);
+    }
+    ImGui::EndChild();
+}
+
 void screen_room(Front& f) {
     const auto* np = f.np;
     lobby_error(f);
@@ -886,12 +977,16 @@ void screen_room(Front& f) {
     ImGui::Spacing();
 
     int slowest = -1;
-    ImGui::BeginChild("members", ImVec2(0, 230), ImGuiChildFlags_AlwaysUseWindowPadding);
+    std::string host_name;
+    const bool has_chat = np->chat_send && np->chat_count && np->chat_get;
+    const float panel_h = 250;
+    const float members_w = has_chat ? std::floor(ImGui::GetContentRegionAvail().x * 0.56f) : 0;
+    ImGui::BeginChild("members", ImVec2(members_w, panel_h), ImGuiChildFlags_AlwaysUseWindowPadding);
     if (ImGui::BeginTable("m", 4, ImGuiTableFlags_RowBg)) {
-        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 110);
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, has_chat ? 96 : 110);
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 120);
-        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 90);
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, has_chat ? 96 : 120);
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, has_chat ? 64 : 90);
         for (int i = 0; i < count; ++i) {
             RecompLauncherCNetplayMember m{};
             if (!np->member_get(np->ctx, i, &m)) continue;
@@ -901,9 +996,13 @@ void screen_room(Front& f) {
             ImGui::AlignTextToFramePadding();
             ImGui::TextColored(kPinkActive, "%s %d", T("Jugador", "Player"), i + 1);
             ImGui::TableNextColumn();
+            if (m.is_host) {
+                host_name = m.display_name;
+                crown();
+                ImGui::SameLine(0, 6);
+            }
             ImGui::AlignTextToFramePadding();
-            ImGui::Text("%s%s%s", m.display_name, m.is_host ? T("  (anfitrión)", "  (host)") : "",
-                        m.is_local ? T("  - tú", "  - you") : "");
+            ImGui::Text("%s%s", m.display_name, m.is_local ? T("  - tú", "  - you") : "");
             ImGui::TableNextColumn();
             ImGui::AlignTextToFramePadding();
             if (m.ready) ImGui::TextColored(kGood, "%s", T("Listo", "Ready"));
@@ -915,6 +1014,10 @@ void screen_room(Front& f) {
         ImGui::EndTable();
     }
     ImGui::EndChild();
+    if (has_chat) {
+        ImGui::SameLine();
+        draw_chat(f, host_name, panel_h);
+    }
 
     if (!newest_online_save(f.dir).empty()) {
         ImGui::Checkbox(T("Continuar la última partida guardada", "Continue the last saved match"), &f.continue_saved);

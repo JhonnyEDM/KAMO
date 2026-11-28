@@ -69,6 +69,7 @@ server `netplay.retcomm.net`:
 | Password | — | ✅ |
 | Players | 2–4 | 2–4 |
 
+Inside a room, players can chat; the host is marked with a crown.
 Rooms of another KAMO version are shown but cannot be joined. During the match, input is relayed
 through the server's UDP relay, so no port forwarding is needed. Direct IP play without the
 server is available from the command line for up to four players (see
