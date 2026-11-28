@@ -22,8 +22,9 @@
 namespace kamo {
 namespace {
 
-constexpr const char* kLatestApi = "https://api.github.com/repos/JhonnyEDM/KAMO/releases/latest";
-constexpr const char* kReleasePage = "https://github.com/JhonnyEDM/KAMO/releases/latest";
+constexpr const char* kLatestApi = "https://api.github.com/repos/OmegaElMegadivo/KAMO/releases/latest";
+constexpr const char* kReleasePage = "https://github.com/OmegaElMegadivo/KAMO/releases/latest";
+constexpr const char* kDownloadPrefix = "https://github.com/OmegaElMegadivo/KAMO/releases/download/";
 
 std::vector<int> version_numbers(std::string v) {
     if (!v.empty() && (v[0] == 'v' || v[0] == 'V')) v.erase(0, 1);
@@ -167,7 +168,9 @@ void Updater::start(bool installed) {
             std::size_t end = 0;
             const auto url = json_string(body, "browser_download_url", at, &end);
             if (url.empty()) break;
-            if (url.find("KAMO-Setup-") != std::string::npos && url.size() > 4 &&
+            // Only an installer attached to this repository's own releases.
+            if (url.rfind(kDownloadPrefix, 0) == 0 &&
+                url.find("KAMO-Setup-") != std::string::npos && url.size() > 4 &&
                 url.compare(url.size() - 4, 4, ".exe") == 0)
                 info.installer_url = url;
             at = end;

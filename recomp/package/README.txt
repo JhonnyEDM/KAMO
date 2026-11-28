@@ -1,6 +1,6 @@
 KAMO = Kirby & The Amazing Mirror + Online
 A native PC version of the game with online co-op for up to four players.
-https://github.com/JhonnyEDM/KAMO
+https://github.com/OmegaElMegadivo/KAMO
 
 You need your own dump of Kirby & The Amazing Mirror (USA) (.gba,
 SHA-1 274b102b6d940f46861a92b4e65f89a51815c12c). It is not included. No BIOS is needed.

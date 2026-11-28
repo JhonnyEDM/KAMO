@@ -7,14 +7,14 @@ body:
     attributes:
       value: |
         **Never attach or link a ROM or BIOS file.** Issues that do will be deleted.
-        Can't open the app or your ROM isn't accepted? See [Playing](https://github.com/JhonnyEDM/KAMO#playing) first. Only Kirby & The Amazing Mirror (USA) is supported.
+        Can't open the app or your ROM isn't accepted? See [Playing](https://github.com/OmegaElMegadivo/KAMO#playing) first. Only Kirby & The Amazing Mirror (USA) is supported.
 
   - type: checkboxes
     id: checks
     attributes:
       label: Before you report
       options:
-        - label: I am on the [latest release](https://github.com/JhonnyEDM/KAMO/releases/latest) and searched the [existing issues](https://github.com/JhonnyEDM/KAMO/issues?q=is%3Aissue).
+        - label: I am on the [latest release](https://github.com/OmegaElMegadivo/KAMO/releases/latest) and searched the [existing issues](https://github.com/OmegaElMegadivo/KAMO/issues?q=is%3Aissue).
           required: true
 
   - type: textarea

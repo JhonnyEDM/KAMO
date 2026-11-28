@@ -1,5 +1,5 @@
 #pragma once
-// Automatic updates from the GitHub releases of JhonnyEDM/KAMO.
+// Automatic updates from the GitHub releases of OmegaElMegadivo/KAMO.
 //
 // At start the menu asks GitHub for the latest release in the background. When it is newer than
 // this build, the menu offers it: KAMO downloads the release's installer, starts it silently

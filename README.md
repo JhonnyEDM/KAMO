@@ -50,7 +50,7 @@ See the [roadmap](docs/ROADMAP.md) for details.
 ## Playing
 
 1. Download `KAMO-Setup-<version>.exe` from the
-   [latest release](https://github.com/JhonnyEDM/KAMO/releases/latest) and run it. It asks for your
+   [latest release](https://github.com/OmegaElMegadivo/KAMO/releases/latest) and run it. It asks for your
    ROM once: only the USA release, SHA-1 `274b102b6d940f46861a92b4e65f89a51815c12c`, is accepted,
    and KAMO only remembers where the file is. (A portable zip is there too; it asks for the ROM
    the first time it starts.)
