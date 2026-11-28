@@ -509,7 +509,7 @@ void draw_update_bar(Front& f) {
     const Uint32 now = SDL_GetTicks();
     const S state = f.updater.state();
     const auto info = f.updater.info();
-    const bool can_install = f.updater.installed() && !info.installer_url.empty();
+    const bool can_install = f.updater.can_self_update();
     if (!f.bar_since) f.bar_since = now;
 
     // A newer release was found: an installed copy updates by itself.
@@ -574,7 +574,7 @@ void draw_update_bar(Front& f) {
         break;
     case S::Ready:
         if (f.install_failed) {
-            text = T("No se pudo abrir el instalador.", "The installer could not be started.");
+            text = T("No se pudo instalar la actualización.", "The update could not be installed.");
             text_color = bad;
             action = T("Abrir página", "Open page");
         } else {
@@ -690,7 +690,7 @@ void draw_update_bar(Front& f) {
         ImGui::SetCursorScreenPos(ImVec2(x0 + W - 24 - bwid, y0 + 14));
         if (button(action, bwid)) {
             if (state == S::Failed) { f.bar_since = now; f.updater.retry(); }
-            else if (state == S::Available && f.updater.installed() && !info.installer_url.empty()) f.updater.download();
+            else if (state == S::Available && can_install) f.updater.download();
             else f.updater.open_release_page();
         }
     }

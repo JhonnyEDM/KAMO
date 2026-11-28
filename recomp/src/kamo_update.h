@@ -2,10 +2,15 @@
 // Automatic updates from the GitHub releases of OmegaElMegadivo/KAMO.
 //
 // Each time the menu opens it asks GitHub for the latest release in the background. When it is
-// newer than this build, an installed copy downloads the release's installer, checks its size
-// and SHA-256 against the release, starts it silently (it replaces the installed files and opens
-// KAMO again) and quits. A copy of KAMO that was not installed with the installer offers the
-// release page instead.
+// newer than this build, KAMO updates itself, checking every download's size and SHA-256 against
+// the release first:
+// - an installed copy downloads the release's installer, starts it silently (it replaces the
+//   installed files and opens KAMO again) and quits;
+// - a portable copy (the zip) downloads the release's zip, unpacks it next to itself, swaps its
+//   files for the new ones (the old ones are renamed *.kamo-old and removed on the next start),
+//   opens the new KAMO and quits. The player's own files (settings, ROM path, saves, sign-in)
+//   are not in the zip and stay as they are.
+// When a release lacks the file a copy needs, the release page opens instead.
 
 #include <filesystem>
 #include <memory>
@@ -20,6 +25,9 @@ struct UpdateInfo {
     std::string page_url;       // the release page
     std::string sha256;         // the installer's digest from the release, lowercase hex ("" if none)
     std::uint64_t size = 0;     // the installer's size from the release (0 if unknown)
+    std::string zip_url;        // KAMO-<version>-Windows-x64.zip, for portable copies
+    std::string zip_sha256;
+    std::uint64_t zip_size = 0;
 };
 
 class Updater {
@@ -34,6 +42,8 @@ public:
     std::string error() const;
     bool installed() const { return installed_; }
     bool started() const { return impl_ != nullptr; }
+    // The latest release carries what this copy needs to update itself (installer or zip).
+    bool can_self_update() const;
     // Failed while downloading or verifying the installer (not while checking).
     bool download_failed() const;
     // True from the start of a download until the installer runs: the menu holds the game then.
@@ -43,7 +53,8 @@ public:
     void download();
     // After a failure: downloads again, or checks again when the check itself failed.
     void retry();
-    // Runs the downloaded installer silently. The caller quits right after.
+    // Installed copy: runs the downloaded installer silently. Portable copy: swaps in the
+    // unpacked files and opens the new KAMO. The caller quits right after a true.
     bool launch_installer();
     void open_release_page() const;
 
