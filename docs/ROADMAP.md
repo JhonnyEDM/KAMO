@@ -9,6 +9,8 @@ runtime used up to 0.1.x was retired in 0.2.x.
 - [x] No BIOS needed: BIOS calls serviced natively, in single player and online
 - [x] Cold boot to gameplay through recompiled code
 - [x] KAMO's own menu: ROM setup, Play alone / online, options, keyboard keys
+- [x] Back to the main menu from the game
+- [ ] Game menu (Esc) translated; today only KAMO's menu is in Spanish and English
 - [x] The three multiplayer sub-games with four consoles (test `subgames`)
 - [ ] Coverage of the whole game, including bosses
 - [ ] Full single-player playthrough without issues
@@ -29,5 +31,6 @@ runtime used up to 0.1.x was retired in 0.2.x.
 
 - [x] Windows build: installer and zip on GitHub Releases
 - [x] Automatic updates (installed copies)
+- [x] RecompLauncher support (`recomplauncher.json` in the zip)
 - [ ] macOS and Linux builds
 - [ ] 1.0

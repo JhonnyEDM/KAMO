@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.20)
 # KAMO needs no BIOS: the runtime boots the cartridge directly and services BIOS calls
 # natively. KAMO_WITH_BIOS=ON links a recompiled retail BIOS instead (development only):
 #   KAMO_BIOS_DIR        output of `gba_recompile --bios <bios> --config bios/gba_bios.toml`
-project(KAMORecomp VERSION 0.3.0 LANGUAGES C CXX)
+project(KAMORecomp VERSION 0.3.1 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -57,6 +57,8 @@ endif()
 set(GBARECOMP_NETPLAY ON CACHE BOOL "" FORCE)
 set(GBARECOMP_RUNTIME_UI_ROOT "${KAMO_RECOMP_UI_DIR}" CACHE PATH "" FORCE)
 add_subdirectory("${KAMO_GBARECOMP_DIR}" gbarecomp EXCLUDE_FROM_ALL)
+# The in-game menu offers "Back to main menu" (patch gbarecomp-0003-back-to-menu.patch).
+target_compile_definitions(gbarecomp_runtime PRIVATE KAMO_BACK_TO_MENU=1)
 
 # The recompiled cartridge, compiled once and shared by the game and its test tools.
 file(GLOB KAMO_SHARDS CONFIGURE_DEPENDS "${KAMO_GENERATED_DIR}/recompiled_*.cpp")

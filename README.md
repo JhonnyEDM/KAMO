@@ -55,8 +55,13 @@ See the [roadmap](docs/ROADMAP.md) for details.
    and KAMO only remembers where the file is. (A portable zip is there too; it asks for the ROM
    the first time it starts.)
 2. KAMO opens on its menu: **Play alone**, **Play online** or **Options**.
+3. In the game, **Esc** (or Start + Select on a gamepad) opens the game menu; **Back to main
+   menu** there, or closing the window, returns to KAMO's menu. **Options > Shortcuts** lists
+   the other keys.
 
-KAMO checks for a new version when it starts and offers to update itself.
+KAMO checks for a new version when it starts and offers to update itself. It also works from
+[RecompLauncher](https://github.com/elripalda/RecompLauncher): the release zip carries a
+`recomplauncher.json`, and the launcher hands KAMO the ROM and installs the updates.
 
 ### Online
 

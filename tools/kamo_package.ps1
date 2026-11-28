@@ -21,6 +21,7 @@ Copy-Item "$build\assets\fonts\LatoLatin-Bold.ttf", "$build\assets\fonts\LatoLat
 Copy-Item assets/logo/kamo-logo.png "$pkg\assets\kamo\logo.png"
 Copy-Item assets/icon/kamo-icon.png "$pkg\assets\kamo\icon.png"
 Copy-Item recomp/package/README.txt $pkg
+Copy-Item recomp/package/recomplauncher.json $pkg
 
 $licenses = @{
     "KAMO-LICENSE.txt"            = "LICENSE"
@@ -40,7 +41,8 @@ if ($bad) { throw "game or player files in the package: $($bad.FullName -join ',
 
 $zip = Join-Path $out "KAMO-$version-Windows-x64.zip"
 if (Test-Path $zip) { Remove-Item $zip }
-Compress-Archive -Path $pkg -DestinationPath $zip -CompressionLevel Optimal
+# Files at the top of the zip: RecompLauncher reads recomplauncher.json next to KAMO.exe there.
+Compress-Archive -Path "$pkg\*" -DestinationPath $zip -CompressionLevel Optimal
 
 $iscc = @("$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe", "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe") |
     Where-Object { Test-Path $_ } | Select-Object -First 1
