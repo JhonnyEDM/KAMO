@@ -15,10 +15,32 @@
 #include "kamo_frontend.h"
 #include "kamo_game.h"
 #include "kamo_settings.h"
+#include "kamo_update.h"
 #include "player_config.h"
 #include "runtime.h"
 
 namespace {
+
+// Exit code of a menu child whose game ended: the parent opens the menu again.
+constexpr int kBackToMenu = 42;
+constexpr const char* kMenuChild = "--menu-child";
+
+// Removes `flag` and its value from args; returns the value, or empty.
+std::string take_value(std::vector<std::string>& args, const char* flag) {
+    for (std::size_t i = 1; i + 1 < args.size(); ++i) {
+        if (args[i] != flag) continue;
+        std::string value = args[i + 1];
+        args.erase(args.begin() + i, args.begin() + i + 2);
+        return value;
+    }
+    return {};
+}
+
+bool take_flag(std::vector<std::string>& args, const char* flag) {
+    const auto before = args.size();
+    std::erase(args, std::string(flag));
+    return args.size() != before;
+}
 
 // Command-line runs (tests, tools, explicit ROM) skip the menu.
 bool wants_menu(const std::vector<std::string>& args) {
@@ -42,6 +64,11 @@ int main(int argc, char** argv) {
 
     auto netplay = kamo::make_netplay_launch();
     std::vector<std::string> args(argv, argv + argc);
+    const bool menu_child = take_flag(args, kMenuChild);
+    // --use-rom <file>: RecompLauncher hands over the player's ROM; KAMO keeps it and opens its menu.
+    const std::string handed_rom = take_value(args, "--use-rom");
+    if (!handed_rom.empty() && kamo::check_rom(std::filesystem::u8path(handed_rom)).empty())
+        kamo::save_rom_path(dir, std::filesystem::u8path(handed_rom));
     // --continue-online: resume the newest saved online match (command-line netplay).
     for (auto it = args.begin() + 1; it != args.end(); ++it) {
         if (*it != "--continue-online") continue;
@@ -82,5 +109,14 @@ int main(int argc, char** argv) {
     kept.reserve(args.size() + 1);
     for (auto& a : args) kept.push_back(a.data());
     kept.push_back(nullptr);
-    return gbarecomp::run_game(int(args.size()), kept.data(), options);
+    const int result = gbarecomp::run_game(int(args.size()), kept.data(), options);
+    if (!menu) return result;
+    // Leaving the game returns to KAMO's menu. The menu runs in a fresh process (the game
+    // runtime is not built to start twice in one process); this first process waits, so a
+    // launcher keeps tracking KAMO, and starts the menu again each time a game ends.
+    if (menu_child) return kBackToMenu;
+    for (;;) {
+        const int code = kamo::run_self_and_wait(kMenuChild);
+        if (code != kBackToMenu) return code < 0 ? result : code;
+    }
 }

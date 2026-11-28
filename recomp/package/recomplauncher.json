@@ -1,0 +1,21 @@
+{
+  "$schema": "https://recomplauncher.com/schema/recomplauncher.json",
+  "format": 1,
+  "name": "KAMO",
+  "repo": "OmegaElMegadivo/KAMO",
+  "inputs": [
+    {
+      "id": "game",
+      "label": "Your Kirby & The Amazing Mirror (USA) ROM (.gba).",
+      "role": "game",
+      "formats": [{ "type": "file", "extensions": ["gba"] }],
+      "dumps": [
+        { "name": "Kirby & The Amazing Mirror (USA)", "size": 16777216, "crc32": "9f2a3048" }
+      ]
+    }
+  ],
+  "start": {
+    "program": ["KAMO.exe"],
+    "args": ["--use-rom", "{input:game}"]
+  }
+}

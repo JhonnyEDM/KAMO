@@ -757,6 +757,37 @@ void screen_options(Front& f) {
             }
             ImGui::EndTabItem();
         }
+        if (ImGui::BeginTabItem(T("Atajos", "Shortcuts"))) {
+            ImGui::Spacing();
+            ImGui::TextDisabled("%s", T("Teclas mientras juegas.", "Keys while you play."));
+            struct Shortcut { const char* keys; const char* es; const char* en; };
+            static const Shortcut shortcuts[] = {
+                {"Esc", "Menú del juego (y volver al menú principal)", "Game menu (and back to the main menu)"},
+                {"Start + Select", "Menú del juego con mando", "Game menu on a gamepad"},
+                {"Alt + Enter", "Pantalla completa", "Full screen"},
+                {"Shift + F1..F9", "Guardado rápido en la ranura 1-9 (solo)", "Quick save to slot 1-9 (alone)"},
+                {"F1..F9", "Cargar la ranura 1-9 (solo)", "Load slot 1-9 (alone)"},
+                {"Shift + P", "Pausa (solo)", "Pause (alone)"},
+                {"Tab", "Acelerar mientras la mantienes (solo)", "Fast forward while held (alone)"},
+                {"F", "Mostrar FPS", "Show FPS"},
+            };
+            if (ImGui::BeginTable("shortcuts", 2, ImGuiTableFlags_RowBg)) {
+                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 200);
+                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
+                for (const auto& sc : shortcuts) {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::TextColored(kPinkActive, "%s", sc.keys);
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(T(sc.es, sc.en));
+                }
+                ImGui::EndTable();
+            }
+            ImGui::Spacing();
+            ImGui::TextWrapped("%s", T("Online: Esc o cerrar la ventana guarda la partida y vuelve al menú; se continúa desde la sala.",
+                                       "Online: Esc or closing the window saves the match and returns to the menu; continue it from the room."));
+            ImGui::EndTabItem();
+        }
         if (ImGui::BeginTabItem("Online")) {
             ImGui::Spacing();
             ImGui::TextWrapped("%s", T("Retraso de entrada: cuántos fotogramas esperan los botones para que todos "
@@ -803,7 +834,9 @@ bool run_frontend(std::vector<std::string>& args, gbarecomp::RunOptions& options
     std::snprintf(f.name, sizeof(f.name), "%s", f.settings.name.c_str());
     f.rom = load_rom_path(dir);
     f.screen = check_rom(f.rom).empty() ? Screen::Menu : Screen::Setup;
-    f.updater.start(std::filesystem::exists(dir / "unins000.exe"));
+    // Under RecompLauncher the launcher installs updates; KAMO does not update itself.
+    const char* launcher = SDL_getenv("RECOMPLAUNCHER");
+    if (!(launcher && launcher[0] == '1')) f.updater.start(std::filesystem::exists(dir / "unins000.exe"));
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_TIMER) != 0) {
         std::fprintf(stderr, "KAMO: cannot open the menu: %s\n", SDL_GetError());

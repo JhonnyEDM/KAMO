@@ -46,4 +46,8 @@ private:
 // "0.3.0" < "0.3.1"; a leading "v" and a "-alpha" style suffix are ignored.
 bool version_newer(const std::string& candidate, const std::string& current);
 
+// Runs this executable again with `argument` and waits for it; returns its exit code, or -1
+// when it could not be started.
+int run_self_and_wait(const char* argument);
+
 }  // namespace kamo

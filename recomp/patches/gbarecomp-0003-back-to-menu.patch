@@ -1,0 +1,35 @@
+diff --git a/src/runtime/runtime.cpp b/src/runtime/runtime.cpp
+--- a/src/runtime/runtime.cpp
++++ b/src/runtime/runtime.cpp
+@@ -3505,7 +3505,11 @@ int run_game(int argc, char** argv, const RunOptions& opts) {
+ #endif
+         RecompRuntimeUiStandardConfig runtime_ui_config{};
+         runtime_ui_config.menu.title = runtime_title;
++#if defined(KAMO_BACK_TO_MENU)
++        runtime_ui_config.menu.subtitle = "Game settings";
++#else
+         runtime_ui_config.menu.subtitle = "Game Boy Advance runtime settings";
++#endif
+         runtime_ui_config.menu.theme = "gba";
+ #if defined(RECOMP_RUNTIME_UI_HAS_PRESENTATION_FLAGS)
+         if (opts.ui_touch_friendly) {
+@@ -3679,12 +3683,18 @@ int run_game(int argc, char** argv, const RunOptions& opts) {
+             }
+         }
+ 
+-#if defined(__ANDROID__)
++#if defined(__ANDROID__) || defined(KAMO_BACK_TO_MENU)
+         RecompRuntimeUiItem quit_item{};
+         quit_item.key = GBARECOMP_UI_KEY_QUIT;
+         quit_item.section = "System";
++#if defined(KAMO_BACK_TO_MENU)
++        // KAMO: leaving the game returns to KAMO's main menu.
++        quit_item.label = "Back to main menu";
++        quit_item.description = "Select twice within 3 seconds to leave the game.";
++#else
+         quit_item.label = "Quit game";
+         quit_item.description = "Select twice within 3 seconds to quit.";
++#endif
+         quit_item.type = RECOMP_RUNTIME_UI_ACTION;
+         runtime_ui_extras.push_back(quit_item);
+ #endif

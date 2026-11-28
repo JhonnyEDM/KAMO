@@ -240,4 +240,27 @@ void Updater::open_release_page() const {
 #endif
 }
 
+int run_self_and_wait(const char* argument) {
+#if defined(_WIN32)
+    wchar_t exe[MAX_PATH];
+    const DWORD n = GetModuleFileNameW(nullptr, exe, MAX_PATH);
+    if (n == 0 || n >= MAX_PATH) return -1;
+    std::wstring line = L"\"" + std::wstring(exe) + L"\" " + widen(argument);
+    STARTUPINFOW si{};
+    si.cb = sizeof(si);
+    PROCESS_INFORMATION pi{};
+    if (!CreateProcessW(exe, line.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi))
+        return -1;
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    DWORD code = 0;
+    GetExitCodeProcess(pi.hProcess, &code);
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    return int(code);
+#else
+    (void)argument;
+    return -1;
+#endif
+}
+
 }  // namespace kamo
